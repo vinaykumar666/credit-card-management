@@ -7,6 +7,7 @@ import com.cards.auth.dto.TokenResponse;
 import com.cards.auth.dto.ValidateTokenRequest;
 import com.cards.auth.dto.ValidateTokenResponse;
 import com.cards.auth.service.AuthService;
+import com.cards.common.logging.LifecycleLog;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,12 @@ public class AuthController {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public TokenResponse register(@Valid @RequestBody RegisterRequest request) {
-        return authService.register(request);
+        LifecycleLog.bind(null, request.getEmail(), null, null);
+        try {
+            return authService.register(request);
+        } finally {
+            LifecycleLog.clearBusinessContext();
+        }
     }
 
     /**
@@ -47,7 +53,12 @@ public class AuthController {
      */
     @PostMapping("/login")
     public TokenResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+        LifecycleLog.bind(null, request.getEmail(), null, null);
+        try {
+            return authService.login(request);
+        } finally {
+            LifecycleLog.clearBusinessContext();
+        }
     }
 
     /**

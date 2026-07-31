@@ -17,6 +17,8 @@ import com.cards.auth.security.OAuth2TokenIssuer;
 import com.cards.common.error.ConflictException;
 import com.cards.common.error.ErrorCodes;
 import com.cards.common.error.UnauthorizedException;
+import com.cards.common.logging.LifecycleLog;
+import com.cards.common.logging.MethodLifecycle;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -57,6 +59,7 @@ public class AuthService {
      * @return access and refresh tokens for the new user
      * @throws ConflictException if the email is already in use
      */
+    @MethodLifecycle("register")
     @Transactional
     public TokenResponse register(RegisterRequest request) {
         if (userRepository.existsByEmailIgnoreCase(request.getEmail())) {
@@ -73,6 +76,7 @@ public class AuthService {
                 .roles(Set.of(userRole))
                 .build();
         userRepository.save(user);
+        LifecycleLog.bind(user.getId(), user.getFullName(), null, null);
         return issueTokens(user);
     }
 
@@ -83,6 +87,7 @@ public class AuthService {
      * @return access and refresh tokens for the authenticated user
      * @throws UnauthorizedException if the user is missing, disabled, or the password is wrong
      */
+    @MethodLifecycle("login")
     @Transactional
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmailIgnoreCase(request.getEmail())
@@ -90,6 +95,7 @@ public class AuthService {
         if (!user.isEnabled() || !passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new UnauthorizedException(ErrorCodes.AUTH_001);
         }
+        LifecycleLog.bind(user.getId(), user.getFullName(), null, null);
         return issueTokens(user);
     }
 

@@ -13,6 +13,13 @@ public final class KafkaTopics {
     /** Topic for outbound notification requests. */
     public static final String NOTIFICATION_REQUESTED = "notification.requested";
 
+    /** Dead-letter suffix appended by the consumer error handler (topic.DLT). */
+    public static final String DLT_SUFFIX = ".DLT";
+
+    public static final String PAYMENT_COMPLETED_DLT = PAYMENT_COMPLETED + DLT_SUFFIX;
+    public static final String PAYMENT_FAILED_DLT = PAYMENT_FAILED + DLT_SUFFIX;
+    public static final String NOTIFICATION_REQUESTED_DLT = NOTIFICATION_REQUESTED + DLT_SUFFIX;
+
     private KafkaTopics() {
     }
 }

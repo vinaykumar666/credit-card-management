@@ -10,6 +10,8 @@ not just *what* was built.
 **Start here:**
 - [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) — spoon-fed local run
 - [docs/KAFKA_SETUP.md](docs/KAFKA_SETUP.md) — Kafka step-by-step
+- [docs/KAFKA_CONSUMER_CHECKLIST.md](docs/KAFKA_CONSUMER_CHECKLIST.md) — consumer settings: why / if not what happens
+- [docs/APP_EVENTS.md](docs/APP_EVENTS.md) — START/END logs + `app_event` footfall table
 - [postman/README.md](postman/README.md) — Postman import + run order
 - [docs/USERS.md](docs/USERS.md) — seed users & payees
 - [docs/BANKING_FEATURES.md](docs/BANKING_FEATURES.md) — transfer, bill pay, beneficiaries

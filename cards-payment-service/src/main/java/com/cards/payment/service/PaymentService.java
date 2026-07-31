@@ -7,6 +7,8 @@ import com.cards.common.error.ValidationBusinessException;
 import com.cards.common.event.NotificationRequestedEvent;
 import com.cards.common.event.PaymentCompletedEvent;
 import com.cards.common.event.PaymentFailedEvent;
+import com.cards.common.logging.LifecycleLog;
+import com.cards.common.logging.MethodLifecycle;
 import com.cards.payment.domain.Beneficiary;
 import com.cards.payment.domain.LedgerEntry;
 import com.cards.payment.domain.Payment;
@@ -65,6 +67,7 @@ public class PaymentService {
     /**
      * Self / card payment (legacy + simple settlement without a beneficiary).
      */
+    @MethodLifecycle("initiate")
     @Transactional
     public PaymentResponse initiate(InitiatePaymentRequest request) {
         Payment payment = basePayment(
@@ -88,6 +91,7 @@ public class PaymentService {
     /**
      * Transfers money to a saved beneficiary (P2P / account transfer).
      */
+    @MethodLifecycle("transfer")
     @Transactional
     public PaymentResponse transfer(TransferMoneyRequest request) {
         Beneficiary beneficiary = beneficiaryService.requireActiveOwned(
@@ -113,6 +117,7 @@ public class PaymentService {
     /**
      * Makes a bill / merchant payment using a saved merchant beneficiary or one-time payee details.
      */
+    @MethodLifecycle("makePayment")
     @Transactional
     public PaymentResponse makePayment(MakePaymentRequest request) {
         UUID beneficiaryId = null;
@@ -178,6 +183,7 @@ public class PaymentService {
 
     private PaymentResponse process(Payment payment) {
         payment = paymentRepository.save(payment);
+        LifecycleLog.bindTransactionId(payment.getId());
         log.info("Payment created id={} type={} status=PENDING", payment.getId(), payment.getPaymentType());
 
         PaymentStrategy strategy = strategyFactory.getStrategy(payment.getPaymentMethod());

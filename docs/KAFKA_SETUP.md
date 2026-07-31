@@ -160,3 +160,6 @@ Constants: `com.cards.common.kafka.KafkaTopics`
 - [ ] `cards-notification-service` up  
 - [ ] Login + Transfer or Bill Pay  
 - [ ] Topics listed / consumer logs show events  
+
+Production consumer settings (manual ack, DLT, idempotency, why/if-not):  
+**[KAFKA_CONSUMER_CHECKLIST.md](KAFKA_CONSUMER_CHECKLIST.md)**

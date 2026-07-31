@@ -1,5 +1,6 @@
 package com.cards.payment.web;
 
+import com.cards.common.logging.LifecycleLog;
 import com.cards.payment.dto.InitiatePaymentRequest;
 import com.cards.payment.dto.MakePaymentRequest;
 import com.cards.payment.dto.PaymentResponse;
@@ -35,19 +36,34 @@ public class PaymentController {
     /** Self / card settlement (no beneficiary). */
     @PostMapping
     public ResponseEntity<PaymentResponse> initiate(@Valid @RequestBody InitiatePaymentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.initiate(request));
+        LifecycleLog.bind(request.getUserId(), null, request.getAmount(), null);
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.initiate(request));
+        } finally {
+            LifecycleLog.clearBusinessContext();
+        }
     }
 
     /** Transfer money to a saved beneficiary. */
     @PostMapping("/transfer")
     public ResponseEntity<PaymentResponse> transfer(@Valid @RequestBody TransferMoneyRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.transfer(request));
+        LifecycleLog.bind(request.getUserId(), null, request.getAmount(), null);
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.transfer(request));
+        } finally {
+            LifecycleLog.clearBusinessContext();
+        }
     }
 
     /** Make a bill / merchant payment. */
     @PostMapping("/bill-pay")
     public ResponseEntity<PaymentResponse> makePayment(@Valid @RequestBody MakePaymentRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.makePayment(request));
+        LifecycleLog.bind(request.getUserId(), null, request.getAmount(), null);
+        try {
+            return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.makePayment(request));
+        } finally {
+            LifecycleLog.clearBusinessContext();
+        }
     }
 
     @GetMapping("/{id}")

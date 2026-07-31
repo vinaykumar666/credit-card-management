@@ -32,15 +32,46 @@ spring:
     enabled: true
     locations: classpath:db/migration
   kafka:
+    # Prefer a multi-broker list in non-local envs: host1:9092,host2:9092,host3:9092
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: cards-notification-service
-      auto-offset-reset: earliest
+      # latest = skip backlog on new group; earliest would replay history on first start
+      auto-offset-reset: latest
+      enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      max-poll-records: ${KAFKA_MAX_POLL_RECORDS:50}
       properties:
         spring.json.trusted.packages: com.cards.common.event
         spring.json.use.type.headers: false
+        max.poll.interval.ms: ${KAFKA_MAX_POLL_INTERVAL_MS:300000}
+        session.timeout.ms: ${KAFKA_SESSION_TIMEOUT_MS:45000}
+        heartbeat.interval.ms: ${KAFKA_HEARTBEAT_INTERVAL_MS:15000}
+        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+        # ssl.truststore.location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
+        # ssl.truststore.password: ${KAFKA_SSL_TRUSTSTORE_PASSWORD:}
+        # sasl.mechanism: ${KAFKA_SASL_MECHANISM:}
+        # sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+    listener:
+      ack-mode: manual_immediate
+      concurrency: ${KAFKA_LISTENER_CONCURRENCY:3}
+    producer:
+      # Required so DefaultErrorHandler can publish poison pills to topic.DLT
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+
+cards:
+  app-events:
+    enabled: true
+    footfall-filter: true
+  kafka:
+    dlt:
+      retry-interval-ms: 1000
+      max-attempts: 3
 
 management:
   endpoints:
@@ -61,3 +92,5 @@ logging:
   level:
     root: INFO
     com.cards: INFO
+    com.cards.lifecycle: INFO
+    org.springframework.kafka: INFO

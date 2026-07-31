@@ -47,7 +47,13 @@ management:
     readinessstate:
       enabled: true
 
+cards:
+  app-events:
+    enabled: true
+    footfall-filter: true
+
 logging:
   level:
     root: INFO
     com.cards: INFO
+    com.cards.lifecycle: INFO
