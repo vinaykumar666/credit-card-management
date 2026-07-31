@@ -322,17 +322,37 @@ END
     }
 
     Write-Step "Ensuring application databases"
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
     $env:PGPASSWORD = $DbPassword
+    $super = if (Test-PgLogin "postgres" $DbPassword "postgres") { "postgres" } else { $DbUser }
+    $created = 0
     foreach ($db in @("auth_db", "account_db", "payment_db", "notification_db")) {
-        $exists = & $script:PsqlExe -U $DbUser -d postgres -h 127.0.0.1 -tAc "SELECT 1 FROM pg_database WHERE datname='$db'"
-        if ("$exists".Trim() -ne "1") {
-            & $script:PsqlExe -U $DbUser -d postgres -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "CREATE DATABASE $db OWNER cards"
+        $raw = & $script:PsqlExe -U $super -d postgres -h 127.0.0.1 -tAc "SELECT 1 FROM pg_database WHERE datname='$db'" 2>$null
+        $exists = ("$raw").Trim()
+        if ($exists -ne "1") {
+            & $script:PsqlExe -U $super -d postgres -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "CREATE DATABASE $db OWNER cards"
+            if ($LASTEXITCODE -ne 0) {
+                $ErrorActionPreference = $prev
+                Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+                throw "Failed to create database $db. Run: powershell -File scripts\ensure-databases.ps1"
+            }
             Write-Ok "Created $db"
+            $created++
         } else {
             Write-Ok "$db already exists"
         }
     }
+    # Hard verify account_db (common failure point for account-details-service)
+    & $script:PsqlExe -U $DbUser -d account_db -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "SELECT 1" 1>$null 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        $ErrorActionPreference = $prev
+        Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+        throw "account_db is not reachable as cards/admin. Run: powershell -File scripts\ensure-databases.ps1"
+    }
     Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+    $ErrorActionPreference = $prev
+    Write-Ok "Verified cards can connect to account_db"
 }
 
 function Test-PortOpen([int]$port) {
