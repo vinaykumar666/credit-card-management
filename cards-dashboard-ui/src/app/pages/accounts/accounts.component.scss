@@ -75,10 +75,12 @@
 }
 
 .tx-panel {
-  padding: 1.25rem;
+  padding: 1.35rem 1.4rem;
   border-radius: 22px;
-  background: var(--surface-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 252, 247, 0.9));
   border: 1px solid var(--line);
+  box-shadow: var(--shadow);
   animation: rise-in 0.5s ease 0.08s both;
 }
 

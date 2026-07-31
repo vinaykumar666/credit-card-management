@@ -18,15 +18,15 @@ export const apiHeadersInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.getAccessToken();
 
-  const headers: Record<string, string> = {
-    'X-Channel-Id': environment.channelId,
-    'X-Client-Id': environment.clientId,
-    'X-Correlation-Id': createCorrelationId(),
-  };
+  // Always attach tenant headers (defaults if env misconfigured).
+  let headers = req.headers
+    .set('X-Channel-Id', environment.channelId || 'WEB')
+    .set('X-Client-Id', environment.clientId || 'cards-dashboard-ui')
+    .set('X-Correlation-Id', createCorrelationId());
 
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers = headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return next(req.clone({ setHeaders: headers }));
+  return next(req.clone({ headers }));
 };

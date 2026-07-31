@@ -4,22 +4,22 @@
       <span class="brand-mark" aria-hidden="true"></span>
       <div>
         <p class="brand-name">AURUM</p>
-        <p class="brand-tag">Credit Command</p>
+        <p class="brand-tag">My cards</p>
       </div>
     </div>
 
-    <nav class="nav" aria-label="Primary">
+    <nav class="nav" aria-label="Main menu">
       <a routerLink="/dashboard" routerLinkActive="active">
-        <span class="nav-ico" aria-hidden="true">◉</span>
-        Overview
+        <span class="nav-ico" aria-hidden="true">⌂</span>
+        Home
       </a>
       <a routerLink="/accounts" routerLinkActive="active">
         <span class="nav-ico" aria-hidden="true">▣</span>
-        Accounts
+        My cards
       </a>
       <a routerLink="/payments" routerLinkActive="active">
         <span class="nav-ico" aria-hidden="true">↗</span>
-        Payments
+        Send &amp; pay
       </a>
       <a routerLink="/beneficiaries" routerLinkActive="active">
         <span class="nav-ico" aria-hidden="true">◇</span>
@@ -27,12 +27,12 @@
       </a>
       <a routerLink="/notifications" routerLinkActive="active">
         <span class="nav-ico" aria-hidden="true">⌁</span>
-        Alerts
+        Messages
       </a>
     </nav>
 
     <div class="rail-foot">
-      <p class="tenant">WEB · cards-dashboard-ui</p>
+      <p class="user-label">Signed in as</p>
       <p class="user-email">{{ email }}</p>
       <button type="button" class="ghost-btn" (click)="logout()">Sign out</button>
     </div>

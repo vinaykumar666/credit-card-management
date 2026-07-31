@@ -1,18 +1,24 @@
 <section class="page">
   <header class="page-head">
     <div>
-      <p class="eyebrow">Card vault</p>
-      <h1>Accounts</h1>
-      <p class="sub">Select a card to inspect ledger activity — data from the BFF aggregation layer.</p>
+      <p class="eyebrow">Wallet</p>
+      <h1>My cards</h1>
+      <p class="sub">Tap a card to see what you’ve spent and what’s available.</p>
     </div>
   </header>
 
   @if (loading()) {
-    <p class="state">Loading accounts…</p>
+    <p class="state">Loading your cards…</p>
   } @else if (error() && !accounts().length) {
-    <p class="state error">{{ error() }}</p>
+    <div class="state error-panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="primary-btn" (click)="reload()">Try again</button>
+    </div>
   } @else if (!accounts().length) {
-    <p class="state">No accounts found for this user.</p>
+    <div class="state empty-panel">
+      <p>No cards are linked to this account yet.</p>
+      <p class="hint">If you just signed up, check back shortly or contact support.</p>
+    </div>
   } @else {
     <div class="layout">
       <div class="account-grid">
@@ -25,7 +31,7 @@
           >
             <div class="tile-top">
               <span>{{ account.cardBrand || 'Card' }}</span>
-              <span class="status">{{ account.status }}</span>
+              <span class="status">{{ friendlyStatus(account.status) }}</span>
             </div>
             <p class="pan">•••• {{ account.cardLastFour }}</p>
             <p class="holder">{{ account.holderName }}</p>
@@ -35,7 +41,7 @@
                 <strong>{{ account.availableCredit | currency: account.currency }}</strong>
               </div>
               <div>
-                <small>Limit</small>
+                <small>Credit limit</small>
                 <strong>{{ account.creditLimit | currency: account.currency }}</strong>
               </div>
             </div>
@@ -44,17 +50,20 @@
       </div>
 
       <section class="tx-panel">
-        <h2>Transactions</h2>
+        <h2>Spending history</h2>
+        @if (error() && accounts().length) {
+          <p class="inline-error">{{ error() }}</p>
+        }
         @if (txLoading()) {
-          <p class="state">Loading transactions…</p>
+          <p class="state soft">Loading purchases…</p>
         } @else if (!transactions().length) {
-          <p class="state">No transactions for this account.</p>
+          <p class="state soft">No purchases on this card yet.</p>
         } @else {
           <table>
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Merchant</th>
+                <th>Where</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th>Amount</th>
@@ -65,8 +74,8 @@
                 <tr>
                   <td>{{ tx.occurredAt | date: 'mediumDate' }}</td>
                   <td>{{ tx.merchant || tx.description || '—' }}</td>
-                  <td>{{ tx.type }}</td>
-                  <td>{{ tx.status }}</td>
+                  <td>{{ friendlyType(tx.type) }}</td>
+                  <td>{{ friendlyStatus(tx.status) }}</td>
                   <td>{{ tx.amount | currency: tx.currency }}</td>
                 </tr>
               }

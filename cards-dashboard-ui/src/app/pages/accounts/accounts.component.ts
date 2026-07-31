@@ -2,6 +2,7 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Account, Transaction } from '../../core/models/api.models';
 import { BffService } from '../../core/services/bff.service';
+import { toUserMessage } from '../../core/utils/user-error';
 
 @Component({
   selector: 'app-accounts',
@@ -21,6 +22,12 @@ export class AccountsComponent implements OnInit {
   readonly txLoading = signal(false);
 
   ngOnInit(): void {
+    this.reload();
+  }
+
+  reload(): void {
+    this.loading.set(true);
+    this.error.set(null);
     this.bff.getAccounts().subscribe({
       next: (accounts) => {
         this.accounts.set(accounts ?? []);
@@ -30,7 +37,7 @@ export class AccountsComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load accounts.');
+        this.error.set(toUserMessage(err, 'We could not load your cards. Please try again.'));
         this.loading.set(false);
       },
     });
@@ -39,6 +46,7 @@ export class AccountsComponent implements OnInit {
   selectAccount(accountId: string): void {
     this.selectedId.set(accountId);
     this.txLoading.set(true);
+    this.error.set(null);
     this.bff.getTransactions(accountId).subscribe({
       next: (response) => {
         const list = Array.isArray(response) ? response : response.transactions ?? [];
@@ -46,9 +54,28 @@ export class AccountsComponent implements OnInit {
         this.txLoading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load transactions.');
+        this.error.set(toUserMessage(err, 'We could not load spending history. Please try again.'));
         this.txLoading.set(false);
       },
     });
+  }
+
+  friendlyStatus(value?: string | null): string {
+    if (!value) return '—';
+    const map: Record<string, string> = {
+      ACTIVE: 'Active',
+      INACTIVE: 'Inactive',
+      BLOCKED: 'Blocked',
+      PENDING: 'Pending',
+      COMPLETED: 'Completed',
+      FAILED: 'Failed',
+      POSTED: 'Posted',
+    };
+    return map[value.toUpperCase()] || value.replace(/_/g, ' ');
+  }
+
+  friendlyType(value?: string | null): string {
+    if (!value) return '—';
+    return value.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase());
   }
 }

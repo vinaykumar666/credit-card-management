@@ -50,6 +50,10 @@ public class TenantHeaderFilter extends OncePerRequestFilter {
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        // Browser CORS preflight never includes custom app headers — must not reject OPTIONS.
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
         String path = request.getRequestURI();
         return PATH_MATCHER.match("/actuator/**", path)
                 || PATH_MATCHER.match("/v3/api-docs/**", path)

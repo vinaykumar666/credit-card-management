@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Beneficiary, BeneficiaryType } from '../../core/models/api.models';
 import { BffService } from '../../core/services/bff.service';
+import { toUserMessage } from '../../core/utils/user-error';
 
 @Component({
   selector: 'app-beneficiaries',
@@ -44,7 +45,7 @@ export class BeneficiariesComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load payees.');
+        this.error.set(toUserMessage(err, 'We could not load your payees. Please try again.'));
         this.loading.set(false);
       },
     });
@@ -75,7 +76,7 @@ export class BeneficiariesComponent implements OnInit {
         this.loadBeneficiaries();
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to add payee.');
+        this.error.set(toUserMessage(err, 'We could not save this payee. Please check the details and try again.'));
         this.submitting.set(false);
       },
     });
@@ -93,7 +94,7 @@ export class BeneficiariesComponent implements OnInit {
         this.loadBeneficiaries();
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to deactivate payee.');
+        this.error.set(toUserMessage(err, 'We could not remove this payee. Please try again.'));
         this.deactivatingId.set(null);
       },
     });

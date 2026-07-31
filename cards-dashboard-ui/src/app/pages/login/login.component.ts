@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { toUserMessage } from '../../core/utils/user-error';
 
 /**
  * Login / register screen for AURUM.
@@ -68,9 +69,7 @@ export class LoginComponent {
       error: (err) => {
         this.loading.set(false);
         this.error.set(
-          err?.error?.message ||
-            err?.error?.error ||
-            'Unable to authenticate. Check credentials and try again.',
+          toUserMessage(err, 'Sign-in did not work. Check your email and password, then try again.'),
         );
       },
     });

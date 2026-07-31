@@ -89,19 +89,20 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.tenant {
+.user-label {
   margin: 0;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   opacity: 0.55;
 }
 
 .user-email {
   margin: 0;
-  font-size: 0.88rem;
-  word-break: break-all;
-  opacity: 0.9;
+  font-size: 0.92rem;
+  word-break: break-word;
+  opacity: 0.95;
+  font-weight: 500;
 }
 
 .ghost-btn {
@@ -146,7 +147,7 @@
 
   .nav {
     grid-auto-flow: column;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     overflow-x: auto;
   }
 

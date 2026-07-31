@@ -1,11 +1,11 @@
 <section class="page">
   <header class="page-head">
     <div>
-      <p class="eyebrow">Command center</p>
-      <h1>Overview</h1>
-      <p class="sub">Live aggregation from the BFF — accounts, movement, and alerts in one breath.</p>
+      <p class="eyebrow">Home</p>
+      <h1>Good to see you</h1>
+      <p class="sub">Here’s a quick look at your cards, recent spending, and messages.</p>
     </div>
-    <a class="cta" routerLink="/payments">New payment</a>
+    <a class="cta" routerLink="/payments">Send or pay</a>
   </header>
 
   @if (loading()) {
@@ -13,23 +13,26 @@
       <div class="skel"></div><div class="skel"></div><div class="skel"></div>
     </div>
   } @else if (error()) {
-    <p class="state error">{{ error() }}</p>
+    <div class="state error-panel" role="alert">
+      <p>{{ error() }}</p>
+      <button type="button" class="primary-btn" (click)="reload()">Try again</button>
+    </div>
   } @else if (data()) {
     <div class="metrics">
       <article class="metric">
-        <p class="label">Active cards</p>
+        <p class="label">Your cards</p>
         <p class="value">{{ data()!.accounts.length }}</p>
-        <p class="hint">Linked to your subject</p>
+        <p class="hint">Ready to use</p>
       </article>
       <article class="metric accent">
-        <p class="label">Available credit</p>
-        <p class="value">{{ totalAvailable() | currency: (data()!.accounts[0].currency || 'USD') }}</p>
-        <p class="hint">Across all accounts</p>
+        <p class="label">Available to spend</p>
+        <p class="value">{{ totalAvailable() | currency: (data()!.accounts[0]?.currency || 'USD') }}</p>
+        <p class="hint">Across all cards</p>
       </article>
       <article class="metric">
-        <p class="label">Open alerts</p>
+        <p class="label">Messages</p>
         <p class="value">{{ data()!.notifications.length }}</p>
-        <p class="hint">Channel {{ data()!.channelId }}</p>
+        <p class="hint">Recent updates</p>
       </article>
     </div>
 
@@ -37,18 +40,18 @@
       <section class="panel">
         <div class="panel-head">
           <h2>Recent activity</h2>
-          <a routerLink="/accounts">View accounts</a>
+          <a routerLink="/accounts">See all cards</a>
         </div>
         @if (!data()!.recentTransactions.length) {
-          <p class="muted">No recent transactions yet.</p>
+          <p class="muted">No recent purchases yet. Activity will show up here.</p>
         } @else {
           <ul class="list">
             @for (tx of data()!.recentTransactions; track tx.id) {
               <li>
                 <div class="avatar" aria-hidden="true">{{ (tx.merchant || tx.type || '?').slice(0, 1) }}</div>
                 <div class="meta">
-                  <strong>{{ tx.merchant || tx.description || tx.type }}</strong>
-                  <span>{{ tx.occurredAt | date: 'mediumDate' }} · {{ tx.status }}</span>
+                  <strong>{{ tx.merchant || tx.description || friendlyType(tx.type) }}</strong>
+                  <span>{{ tx.occurredAt | date: 'mediumDate' }} · {{ friendlyStatus(tx.status) }}</span>
                 </div>
                 <em>{{ tx.amount | currency: tx.currency }}</em>
               </li>
@@ -59,19 +62,19 @@
 
       <section class="panel">
         <div class="panel-head">
-          <h2>Latest alerts</h2>
-          <a routerLink="/notifications">All alerts</a>
+          <h2>Latest messages</h2>
+          <a routerLink="/notifications">View all</a>
         </div>
         @if (!data()!.notifications.length) {
-          <p class="muted">Quiet for now — no notifications.</p>
+          <p class="muted">You’re all caught up — no new messages.</p>
         } @else {
           <ul class="list">
             @for (n of data()!.notifications.slice(0, 5); track n.id) {
               <li>
                 <div class="avatar soft" aria-hidden="true">⌁</div>
                 <div class="meta">
-                  <strong>{{ n.template }}</strong>
-                  <span>{{ n.channel }} · {{ n.status }}</span>
+                  <strong>{{ friendlyTemplate(n.template) }}</strong>
+                  <span>{{ friendlyStatus(n.status) }}</span>
                 </div>
                 <em>{{ n.createdAt | date: 'short' }}</em>
               </li>

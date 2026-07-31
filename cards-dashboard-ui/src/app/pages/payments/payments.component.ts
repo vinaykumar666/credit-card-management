@@ -9,6 +9,7 @@ import {
 } from '../../core/models/api.models';
 import { AuthService } from '../../core/services/auth.service';
 import { BffService } from '../../core/services/bff.service';
+import { toUserMessage } from '../../core/utils/user-error';
 
 type PaymentsTab = 'transfer' | 'bill' | 'card' | 'history';
 
@@ -26,8 +27,8 @@ export class PaymentsComponent implements OnInit {
 
   readonly methods: PaymentMethod[] = ['CARD', 'UPI', 'NET_BANKING', 'EXTERNAL'];
   readonly tabs: { id: PaymentsTab; label: string }[] = [
-    { id: 'transfer', label: 'Transfer' },
-    { id: 'bill', label: 'Bill pay' },
+    { id: 'transfer', label: 'Send money' },
+    { id: 'bill', label: 'Pay a bill' },
     { id: 'card', label: 'Card settle' },
     { id: 'history', label: 'History' },
   ];
@@ -102,7 +103,7 @@ export class PaymentsComponent implements OnInit {
         this.loading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load accounts for payment.');
+        this.error.set(toUserMessage(err, 'We could not load your cards. Please try again.'));
         this.loading.set(false);
       },
     });
@@ -121,7 +122,7 @@ export class PaymentsComponent implements OnInit {
         }
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load payees.');
+        this.error.set(toUserMessage(err, 'We could not load your payees. Please try again.'));
       },
     });
   }
@@ -143,7 +144,7 @@ export class PaymentsComponent implements OnInit {
         this.historyLoading.set(false);
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Failed to load payment history.');
+        this.error.set(toUserMessage(err, 'We could not load your payment history. Please try again.'));
         this.historyLoading.set(false);
       },
     });
@@ -175,7 +176,7 @@ export class PaymentsComponent implements OnInit {
           this.submitting.set(false);
         },
         error: (err) => {
-          this.error.set(err?.error?.message || 'Transfer failed.');
+          this.error.set(toUserMessage(err, 'Transfer could not be completed. Please try again.'));
           this.submitting.set(false);
         },
       });
@@ -233,7 +234,7 @@ export class PaymentsComponent implements OnInit {
           this.submitting.set(false);
         },
         error: (err) => {
-          this.error.set(err?.error?.message || 'Bill payment failed.');
+          this.error.set(toUserMessage(err, 'Bill payment could not be completed. Please try again.'));
           this.submitting.set(false);
         },
       });
@@ -247,7 +248,7 @@ export class PaymentsComponent implements OnInit {
 
     const userId = this.auth.getUserId();
     if (!userId) {
-      this.error.set('Session missing user id. Please sign in again.');
+      this.error.set('Please sign in again to continue.');
       return;
     }
 
@@ -270,7 +271,7 @@ export class PaymentsComponent implements OnInit {
           this.submitting.set(false);
         },
         error: (err) => {
-          this.error.set(err?.error?.message || 'Payment initiation failed.');
+          this.error.set(toUserMessage(err, 'Payment could not be started. Please try again.'));
           this.submitting.set(false);
         },
       });
