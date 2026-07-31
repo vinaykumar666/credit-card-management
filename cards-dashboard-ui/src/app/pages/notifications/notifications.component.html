@@ -1,0 +1,33 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Signal desk</p>
+      <h1>Alerts</h1>
+      <p class="sub">Notification log across email, SMS, and push — sourced through the BFF.</p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <p class="state">Loading alerts…</p>
+  } @else if (error()) {
+    <p class="state error">{{ error() }}</p>
+  } @else if (!items().length) {
+    <p class="state">All clear — no notifications yet.</p>
+  } @else {
+    <div class="alerts">
+      @for (item of items(); track item.id) {
+        <article class="alert">
+          <div class="badge" aria-hidden="true">{{ item.channel.slice(0, 1) }}</div>
+          <div class="body">
+            <strong>{{ item.template }}</strong>
+            <span>{{ item.channel }} · {{ item.status }} · {{ item.recipient }}</span>
+            @if (item.errorMessage) {
+              <span class="error">{{ item.errorMessage }}</span>
+            }
+          </div>
+          <time class="when">{{ item.createdAt | date: 'short' }}</time>
+        </article>
+      }
+    </div>
+  }
+</section>

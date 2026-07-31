@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: cards-authentication-service
+    newTag: stage
+  - name: cards-account-details-service
+    newTag: stage
+  - name: cards-payment-service
+    newTag: stage
+  - name: cards-notification-service
+    newTag: stage
+  - name: cards-enterprise-api-service
+    newTag: stage
+  - name: cards-api-gateway-service
+    newTag: stage

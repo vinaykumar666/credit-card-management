@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+images:
+  - name: cards-authentication-service
+    newTag: "1.0.0"
+  - name: cards-account-details-service
+    newTag: "1.0.0"
+  - name: cards-payment-service
+    newTag: "1.0.0"
+  - name: cards-notification-service
+    newTag: "1.0.0"
+  - name: cards-enterprise-api-service
+    newTag: "1.0.0"
+  - name: cards-api-gateway-service
+    newTag: "1.0.0"
+replicas:
+  - name: cards-payment-service
+    count: 5
+  - name: cards-api-gateway-service
+    count: 5
+patches:
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: cards-payment-service
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 5
+      - op: replace
+        path: /spec/maxReplicas
+        value: 20
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: cards-api-gateway-service
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 5
+      - op: replace
+        path: /spec/maxReplicas
+        value: 15

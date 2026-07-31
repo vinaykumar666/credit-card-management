@@ -1,0 +1,14 @@
+**/target/
+**/node_modules/
+**/dist/
+.idea/
+*.iml
+.vscode/
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+**/dependency-reduced-pom.xml
+tmp-hash/
+*.jar.original

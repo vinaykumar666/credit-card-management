@@ -1,0 +1,120 @@
+.layout {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 1.1rem;
+}
+
+.account-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.account-tile {
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 1.15rem 1.2rem;
+  background:
+    linear-gradient(145deg, rgba(10, 46, 44, 0.96), rgba(26, 107, 99, 0.88));
+  color: #f3fffb;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: rise-in 0.45s ease both;
+}
+
+.account-tile:hover,
+.account-tile.active {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 22px 48px rgba(10, 46, 44, 0.28);
+}
+
+.tile-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.status {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pan {
+  margin: 1.4rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.12em;
+}
+
+.holder {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.tile-foot {
+  margin-top: 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.tile-foot small {
+  display: block;
+  opacity: 0.65;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tile-foot strong {
+  font-size: 1.05rem;
+}
+
+.tx-panel {
+  padding: 1.25rem;
+  border-radius: 22px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  animation: rise-in 0.5s ease 0.08s both;
+}
+
+.tx-panel h2 {
+  margin: 0 0 1rem;
+  color: var(--forest);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th,
+td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+th {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}

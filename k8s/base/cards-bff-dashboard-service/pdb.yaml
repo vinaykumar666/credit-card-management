@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cards-bff-dashboard-service
+  labels:
+    app: cards-bff-dashboard-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: cards-bff-dashboard-service

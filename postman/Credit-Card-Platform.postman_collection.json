@@ -1,0 +1,424 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Credit Card Platform",
+    "description": "Full API collection for AURUM / credit-card-management.\n\n## Setup\n1. Import this collection + `Credit-Card-Platform.postman_environment.json`.\n2. Select environment **Credit Card Local**.\n3. Run folder **01 Auth** → Login (Ada). Token auto-saves to `accessToken`.\n4. Run BFF / Gateway requests — headers are injected by collection scripts.\n\n## Seed users\nSee `docs/USERS.md`. Default password: `Password123!`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('correlationId')) {",
+          "  pm.collectionVariables.set('correlationId', pm.variables.replaceIn('{{$guid}}'));",
+          "}",
+          "const cid = pm.variables.replaceIn('{{$guid}}');",
+          "pm.request.headers.upsert({ key: 'X-Correlation-Id', value: cid });",
+          "pm.request.headers.upsert({ key: 'X-Channel-Id', value: pm.environment.get('channelId') || 'WEB' });",
+          "pm.request.headers.upsert({ key: 'X-Client-Id', value: pm.environment.get('clientId') || 'cards-dashboard-ui' });"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "correlationId", "value": "" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "userId", "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
+    { "key": "accountId", "value": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "01 Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', j.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', j.refreshToken);",
+                  "  pm.collectionVariables.set('userId', j.userId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.user@cards.local\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"New User\"\n}"
+            },
+            "url": "{{authUrl}}/api/v1/auth/register",
+            "description": "Create a new user. Prefer Login with seed users for demos."
+          }
+        },
+        {
+          "name": "Login (Ada)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', j.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', j.refreshToken);",
+                  "pm.collectionVariables.set('userId', j.userId);",
+                  "pm.environment.set('accessToken', j.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ada.lovelace@cards.local\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{authUrl}}/api/v1/auth/login",
+            "description": "Seed user Ada. Saves accessToken automatically."
+          }
+        },
+        {
+          "name": "Login (Ben)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', j.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', j.refreshToken);",
+                  "pm.collectionVariables.set('userId', j.userId);",
+                  "pm.collectionVariables.set('accountId', 'b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2');",
+                  "pm.environment.set('accessToken', j.accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ben.franklin@cards.local\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": "{{authUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const j = pm.response.json();",
+                  "  pm.collectionVariables.set('accessToken', j.accessToken);",
+                  "  pm.collectionVariables.set('refreshToken', j.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{authUrl}}/api/v1/auth/refresh"
+          }
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
+            },
+            "url": "{{authUrl}}/api/v1/auth/validate"
+          }
+        },
+        {
+          "name": "OAuth2 Discovery",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authUrl}}/.well-known/openid-configuration"
+          }
+        },
+        {
+          "name": "OAuth2 JWKS",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authUrl}}/oauth2/jwks"
+          }
+        },
+        {
+          "name": "OAuth2 Client Credentials (BFF)",
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                { "key": "username", "value": "cards-bff-service", "type": "string" },
+                { "key": "password", "value": "bff-secret", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "client_credentials" },
+                { "key": "scope", "value": "cards.read cards.write" }
+              ]
+            },
+            "url": "{{authUrl}}/oauth2/token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 BFF (UI path)",
+      "item": [
+        {
+          "name": "Dashboard",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/dashboard",
+            "description": "Aggregated dashboard. Requires Bearer + channel/client headers."
+          }
+        },
+        {
+          "name": "List Accounts",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/accounts"
+          }
+        },
+        {
+          "name": "Account Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/accounts/{{accountId}}/transactions?page=0&size=20"
+          }
+        },
+        {
+          "name": "Notifications",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/notifications"
+          }
+        },
+        {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  if (j.id) pm.collectionVariables.set('paymentId', j.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"userId\": \"{{userId}}\",\n  \"amount\": 25.50,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"CARD\"\n}"
+            },
+            "url": "{{bffUrl}}/bff/v1/payments",
+            "description": "Triggers payment saga → Kafka payment.completed/failed → notifications."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Gateway",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{gatewayUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Get Account by Id",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/api/v1/accounts/{{accountId}}"
+          }
+        },
+        {
+          "name": "Get Accounts by User",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/api/v1/accounts/user/{{userId}}"
+          }
+        },
+        {
+          "name": "Create Account",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"accountNumber\": \"4000000000000002\",\n  \"cardLastFour\": \"0002\",\n  \"cardBrand\": \"VISA\",\n  \"creditLimit\": 3000,\n  \"currency\": \"USD\",\n  \"holderName\": \"Ada Lovelace\",\n  \"email\": \"ada.lovelace@cards.local\",\n  \"phone\": \"+1-415-555-0199\"\n}"
+            },
+            "url": "{{gatewayUrl}}/api/v1/accounts"
+          }
+        },
+        {
+          "name": "Account Transactions",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/api/v1/accounts/{{accountId}}/transactions?page=0&size=20"
+          }
+        },
+        {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  if (j.id) pm.collectionVariables.set('paymentId', j.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"userId\": \"{{userId}}\",\n  \"amount\": 40.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"UPI\"\n}"
+            },
+            "url": "{{gatewayUrl}}/api/v1/payments"
+          }
+        },
+        {
+          "name": "Get Payment",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/api/v1/payments/{{paymentId}}"
+          }
+        },
+        {
+          "name": "Notifications by User",
+          "request": {
+            "method": "GET",
+            "url": "{{gatewayUrl}}/api/v1/notifications/user/{{userId}}"
+          }
+        },
+        {
+          "name": "Enterprise Authorize",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentId\": \"{{$guid}}\",\n  \"cardToken\": \"tok_demo\",\n  \"amount\": 10.00,\n  \"currency\": \"USD\",\n  \"merchantId\": \"cards-platform\"\n}"
+            },
+            "url": "{{gatewayUrl}}/api/v1/enterprise/payments/authorize"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Direct Services (debug)",
+      "item": [
+        {
+          "name": "Auth Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{authUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Account Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{accountUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Payment Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{paymentUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Notification Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{notificationUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "BFF Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{bffUrl}}/actuator/health"
+          }
+        },
+        {
+          "name": "Enterprise Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": "{{enterpriseUrl}}/api/v1/enterprise/health-check"
+          }
+        }
+      ]
+    }
+  ]
+}

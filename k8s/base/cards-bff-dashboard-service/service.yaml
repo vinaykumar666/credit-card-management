@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cards-bff-dashboard-service
+  labels:
+    app: cards-bff-dashboard-service
+spec:
+  type: ClusterIP
+  selector:
+    app: cards-bff-dashboard-service
+  ports:
+    - name: http
+      port: 8086
+      targetPort: http

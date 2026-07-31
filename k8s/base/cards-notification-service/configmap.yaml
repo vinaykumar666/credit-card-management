@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cards-notification-service
+  labels:
+    app: cards-notification-service
+data:
+  SERVER_PORT: "8084"
+  SPRING_APPLICATION_NAME: cards-notification-service
+  DB_URL: jdbc:postgresql://postgres.cards-platform.svc.cluster.local:5432/notification_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.cards-platform.svc.cluster.local:9092

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cards-payment-service
+  labels:
+    app: cards-payment-service
+data:
+  SERVER_PORT: "8083"
+  SPRING_APPLICATION_NAME: cards-payment-service
+  DB_URL: jdbc:postgresql://postgres.cards-platform.svc.cluster.local:5432/payment_db
+  KAFKA_BOOTSTRAP_SERVERS: kafka.cards-platform.svc.cluster.local:9092
+  ENTERPRISE_API_URL: http://cards-enterprise-api-service:8085

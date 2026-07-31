@@ -1,0 +1,89 @@
+error:
+  codes:
+    AUTH_001:
+      httpStatus: 401
+      message: "Invalid credentials"
+    AUTH_002:
+      httpStatus: 409
+      message: "Email already registered"
+    AUTH_003:
+      httpStatus: 401
+      message: "Invalid or expired refresh token"
+    AUTH_004:
+      httpStatus: 401
+      message: "Unauthorized"
+    AUTH_005:
+      httpStatus: 400
+      message: "Invalid OAuth2 client request"
+    AUTH_006:
+      httpStatus: 404
+      message: "User not found"
+    AUTH_007:
+      httpStatus: 500
+      message: "Default role configuration missing"
+    ACCT_001:
+      httpStatus: 404
+      message: "Account not found"
+    ACCT_002:
+      httpStatus: 400
+      message: "Invalid account request"
+    ACCT_003:
+      httpStatus: 409
+      message: "Account number already exists"
+    PAY_001:
+      httpStatus: 404
+      message: "Payment not found"
+    PAY_002:
+      httpStatus: 400
+      message: "Unsupported payment method"
+    PAY_003:
+      httpStatus: 402
+      message: "Payment processing failed"
+    PAY_004:
+      httpStatus: 503
+      message: "Enterprise payment network unavailable"
+    NOTIF_001:
+      httpStatus: 404
+      message: "Notification not found"
+    NOTIF_002:
+      httpStatus: 400
+      message: "Unsupported notification channel"
+    ENT_001:
+      httpStatus: 502
+      message: "External network authorization declined"
+    ENT_002:
+      httpStatus: 400
+      message: "Invalid enterprise payment request"
+    BFF_001:
+      httpStatus: 400
+      message: "Missing required header X-Channel-Id"
+    BFF_002:
+      httpStatus: 400
+      message: "Missing required header X-Client-Id"
+    BFF_003:
+      httpStatus: 403
+      message: "Channel is not allowed"
+    BFF_004:
+      httpStatus: 403
+      message: "Client is not allowed"
+    BFF_005:
+      httpStatus: 502
+      message: "Downstream aggregation failed"
+    GW_001:
+      httpStatus: 503
+      message: "Downstream service unavailable"
+    GW_002:
+      httpStatus: 401
+      message: "Missing or invalid Authorization header"
+    GW_003:
+      httpStatus: 400
+      message: "Missing required tenant headers"
+    COMMON_001:
+      httpStatus: 400
+      message: "Validation failed"
+    COMMON_002:
+      httpStatus: 500
+      message: "Unexpected internal error"
+    COMMON_003:
+      httpStatus: 400
+      message: "Missing correlation context"

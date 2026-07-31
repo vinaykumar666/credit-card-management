@@ -1,0 +1,41 @@
+<div class="shell">
+  <aside class="rail">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <p class="brand-name">AURUM</p>
+        <p class="brand-tag">Credit Command</p>
+      </div>
+    </div>
+
+    <nav class="nav" aria-label="Primary">
+      <a routerLink="/dashboard" routerLinkActive="active">
+        <span class="nav-ico" aria-hidden="true">◉</span>
+        Overview
+      </a>
+      <a routerLink="/accounts" routerLinkActive="active">
+        <span class="nav-ico" aria-hidden="true">▣</span>
+        Accounts
+      </a>
+      <a routerLink="/payments" routerLinkActive="active">
+        <span class="nav-ico" aria-hidden="true">↗</span>
+        Payments
+      </a>
+      <a routerLink="/notifications" routerLinkActive="active">
+        <span class="nav-ico" aria-hidden="true">⌁</span>
+        Alerts
+      </a>
+    </nav>
+
+    <div class="rail-foot">
+      <p class="tenant">WEB · cards-dashboard-ui</p>
+      <p class="user-email">{{ email }}</p>
+      <button type="button" class="ghost-btn" (click)="logout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <div class="content-glow" aria-hidden="true"></div>
+    <router-outlet />
+  </main>
+</div>

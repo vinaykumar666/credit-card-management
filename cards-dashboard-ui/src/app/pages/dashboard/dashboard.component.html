@@ -1,0 +1,84 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Command center</p>
+      <h1>Overview</h1>
+      <p class="sub">Live aggregation from the BFF — accounts, movement, and alerts in one breath.</p>
+    </div>
+    <a class="cta" routerLink="/payments">New payment</a>
+  </header>
+
+  @if (loading()) {
+    <div class="skeleton-grid" aria-busy="true">
+      <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+    </div>
+  } @else if (error()) {
+    <p class="state error">{{ error() }}</p>
+  } @else if (data()) {
+    <div class="metrics">
+      <article class="metric">
+        <p class="label">Active cards</p>
+        <p class="value">{{ data()!.accounts.length }}</p>
+        <p class="hint">Linked to your subject</p>
+      </article>
+      <article class="metric accent">
+        <p class="label">Available credit</p>
+        <p class="value">{{ totalAvailable() | currency: (data()!.accounts[0].currency || 'USD') }}</p>
+        <p class="hint">Across all accounts</p>
+      </article>
+      <article class="metric">
+        <p class="label">Open alerts</p>
+        <p class="value">{{ data()!.notifications.length }}</p>
+        <p class="hint">Channel {{ data()!.channelId }}</p>
+      </article>
+    </div>
+
+    <div class="split">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Recent activity</h2>
+          <a routerLink="/accounts">View accounts</a>
+        </div>
+        @if (!data()!.recentTransactions.length) {
+          <p class="muted">No recent transactions yet.</p>
+        } @else {
+          <ul class="list">
+            @for (tx of data()!.recentTransactions; track tx.id) {
+              <li>
+                <div class="avatar" aria-hidden="true">{{ (tx.merchant || tx.type || '?').slice(0, 1) }}</div>
+                <div class="meta">
+                  <strong>{{ tx.merchant || tx.description || tx.type }}</strong>
+                  <span>{{ tx.occurredAt | date: 'mediumDate' }} · {{ tx.status }}</span>
+                </div>
+                <em>{{ tx.amount | currency: tx.currency }}</em>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Latest alerts</h2>
+          <a routerLink="/notifications">All alerts</a>
+        </div>
+        @if (!data()!.notifications.length) {
+          <p class="muted">Quiet for now — no notifications.</p>
+        } @else {
+          <ul class="list">
+            @for (n of data()!.notifications.slice(0, 5); track n.id) {
+              <li>
+                <div class="avatar soft" aria-hidden="true">⌁</div>
+                <div class="meta">
+                  <strong>{{ n.template }}</strong>
+                  <span>{{ n.channel }} · {{ n.status }}</span>
+                </div>
+                <em>{{ n.createdAt | date: 'short' }}</em>
+              </li>
+            }
+          </ul>
+        }
+      </section>
+    </div>
+  }
+</section>

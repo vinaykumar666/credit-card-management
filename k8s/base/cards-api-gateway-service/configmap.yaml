@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cards-api-gateway-service
+  labels:
+    app: cards-api-gateway-service
+data:
+  SERVER_PORT: "8080"
+  SPRING_APPLICATION_NAME: cards-api-gateway-service
+  AUTH_SERVICE_URL: http://cards-authentication-service:8081
+  ACCOUNT_SERVICE_URL: http://cards-account-details-service:8082
+  PAYMENT_SERVICE_URL: http://cards-payment-service:8083
+  NOTIFICATION_SERVICE_URL: http://cards-notification-service:8084
+  ENTERPRISE_SERVICE_URL: http://cards-enterprise-api-service:8085
+  BFF_SERVICE_URL: http://cards-bff-dashboard-service:8086

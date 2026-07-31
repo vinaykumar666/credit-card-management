@@ -1,0 +1,43 @@
+server:
+  port: ${SERVER_PORT:8085}
+  shutdown: graceful
+
+spring:
+  application:
+    name: cards-enterprise-api-service
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+app:
+  external-network:
+    # When true, ~10% of calls fail to simulate flaky external network
+    simulate-failures: ${EXTERNAL_SIMULATE_FAILURES:true}
+    success-rate: ${EXTERNAL_SUCCESS_RATE:0.90}
+
+logging:
+  level:
+    root: INFO
+    com.cards: INFO

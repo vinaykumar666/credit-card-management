@@ -1,0 +1,149 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-cards}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cards}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  cards-authentication-service:
+    image: ${IMAGE_PREFIX}-cards-authentication-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8081
+      DB_URL: jdbc:postgresql://postgres:5432/auth_db
+      DB_USERNAME: ${DB_USERNAME:-cards}
+      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+      OAUTH2_UI_SECRET: ${OAUTH2_UI_SECRET:-{noop}dashboard-secret}
+      OAUTH2_BFF_SECRET: ${OAUTH2_BFF_SECRET:-{noop}bff-secret}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  cards-account-details-service:
+    image: ${IMAGE_PREFIX}-cards-account-details-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8082
+      DB_URL: jdbc:postgresql://postgres:5432/account_db
+      DB_USERNAME: ${DB_USERNAME:-cards}
+      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      cards-authentication-service:
+        condition: service_started
+    restart: unless-stopped
+
+  cards-payment-service:
+    image: ${IMAGE_PREFIX}-cards-payment-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8083
+      DB_URL: jdbc:postgresql://postgres:5432/payment_db
+      DB_USERNAME: ${DB_USERNAME:-cards}
+      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ENTERPRISE_API_URL: http://cards-enterprise-api-service:8085
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      cards-enterprise-api-service:
+        condition: service_started
+    restart: unless-stopped
+
+  cards-notification-service:
+    image: ${IMAGE_PREFIX}-cards-notification-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8084
+      DB_URL: jdbc:postgresql://postgres:5432/notification_db
+      DB_USERNAME: ${DB_USERNAME:-cards}
+      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
+  cards-enterprise-api-service:
+    image: ${IMAGE_PREFIX}-cards-enterprise-api-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8085
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    restart: unless-stopped
+
+  cards-api-gateway-service:
+    image: ${IMAGE_PREFIX}-cards-api-gateway-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://cards-authentication-service:8081
+      ACCOUNT_SERVICE_URL: http://cards-account-details-service:8082
+      PAYMENT_SERVICE_URL: http://cards-payment-service:8083
+      NOTIFICATION_SERVICE_URL: http://cards-notification-service:8084
+      ENTERPRISE_SERVICE_URL: http://cards-enterprise-api-service:8085
+      BFF_SERVICE_URL: http://cards-bff-dashboard-service:8086
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - cards-authentication-service
+      - cards-account-details-service
+      - cards-payment-service
+      - cards-notification-service
+    restart: unless-stopped
+
+  cards-bff-dashboard-service:
+    image: ${IMAGE_PREFIX}-cards-bff-dashboard-service:${IMAGE_TAG:-latest}
+    environment:
+      SERVER_PORT: 8086
+      GATEWAY_BASE_URL: http://cards-api-gateway-service:8080
+      OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
+    ports:
+      - "8086:8086"
+    depends_on:
+      - cards-api-gateway-service
+    restart: unless-stopped
+
+  cards-dashboard-ui:
+    image: ${IMAGE_PREFIX}-cards-dashboard-ui:${IMAGE_TAG:-latest}
+    ports:
+      - "80:80"
+    depends_on:
+      - cards-bff-dashboard-service
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

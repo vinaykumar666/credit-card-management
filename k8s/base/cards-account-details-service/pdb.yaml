@@ -1,0 +1,11 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cards-account-details-service
+  labels:
+    app: cards-account-details-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: cards-account-details-service

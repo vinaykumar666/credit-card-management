@@ -1,0 +1,84 @@
+server:
+  port: ${SERVER_PORT:8086}
+  shutdown: graceful
+
+spring:
+  application:
+    name: cards-bff-dashboard-service
+  threads:
+    virtual:
+      enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER:http://localhost:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+
+# Preferred path: UI → BFF:8086 directly; BFF → gateway:8080 for downstream APIs.
+# Gateway also exposes /bff/** for optional edge routing consistency.
+app:
+  gateway-base-url: ${GATEWAY_BASE_URL:http://localhost:8080}
+  channels:
+    allowed:
+      - WEB
+      - MOBILE
+      - BRANCH
+  clients:
+    allowed:
+      - cards-dashboard-ui
+      - cards-mobile
+      - cards-branch-portal
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 3s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+    instances:
+      downstreamGateway:
+        baseConfig: default
+        waitDurationInOpenState: 15s
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 8s
+        cancelRunningFuture: true
+    instances:
+      downstreamGateway:
+        baseConfig: default
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.cards: INFO

@@ -1,0 +1,70 @@
+.panel {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+form {
+  display: grid;
+  gap: 0.95rem;
+  padding: 1.35rem;
+  border-radius: 22px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 36px rgba(10, 46, 44, 0.06);
+  animation: rise-in 0.5s ease both;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 0.75rem;
+}
+
+.result {
+  padding: 1.35rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(160deg, rgba(159, 216, 207, 0.25), rgba(255, 253, 248, 0.95));
+  border: 1px solid var(--line);
+  animation: rise-in 0.55s ease 0.1s both;
+}
+
+.result h2 {
+  margin: 0 0 1rem;
+  color: var(--forest);
+}
+
+dl {
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+}
+
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed var(--line);
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--forest);
+  text-align: right;
+  word-break: break-all;
+}
+
+@media (max-width: 900px) {
+  .panel,
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

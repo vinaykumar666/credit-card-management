@@ -1,0 +1,181 @@
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+
+spring:
+  application:
+    name: cards-api-gateway-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH2_ISSUER:http://localhost:8081}
+  cloud:
+    gateway:
+      default-filters:
+        - PreserveHostHeader
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: authService
+                fallbackUri: forward:/fallback/auth
+
+        - id: account-service
+          uri: ${ACCOUNT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/accounts/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: accountService
+                fallbackUri: forward:/fallback/accounts
+
+        - id: payment-service
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/payments/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: paymentService
+                fallbackUri: forward:/fallback/payments
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: notificationService
+                fallbackUri: forward:/fallback/notifications
+
+        - id: enterprise-service
+          uri: ${ENTERPRISE_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/enterprise/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: enterpriseService
+                fallbackUri: forward:/fallback/enterprise
+
+        # Optional edge route for consistency. Preferred client path is UI → BFF:8086 directly
+        # (BFF then calls this gateway at :8080 for /api/v1/** aggregation).
+        - id: bff-service
+          uri: ${BFF_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/bff/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: bffService
+                fallbackUri: forward:/fallback/bff
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,gateway
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+    circuitbreakers:
+      enabled: true
+
+# Per-route Resilience4j: circuit breaker + time limiter + bulkhead isolation
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        slidingWindowSize: 20
+        permittedNumberOfCallsInHalfOpenState: 5
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        slowCallRateThreshold: 80
+        slowCallDurationThreshold: 3s
+    instances:
+      authService:
+        baseConfig: default
+      accountService:
+        baseConfig: default
+      paymentService:
+        baseConfig: default
+        waitDurationInOpenState: 15s
+      notificationService:
+        baseConfig: default
+      enterpriseService:
+        baseConfig: default
+        failureRateThreshold: 40
+        waitDurationInOpenState: 20s
+      bffService:
+        baseConfig: default
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 5s
+        cancelRunningFuture: true
+    instances:
+      authService:
+        baseConfig: default
+      accountService:
+        baseConfig: default
+      paymentService:
+        timeoutDuration: 8s
+      notificationService:
+        baseConfig: default
+      enterpriseService:
+        timeoutDuration: 10s
+      bffService:
+        timeoutDuration: 10s
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 0
+    instances:
+      authService:
+        baseConfig: default
+        maxConcurrentCalls: 40
+      accountService:
+        baseConfig: default
+        maxConcurrentCalls: 40
+      paymentService:
+        baseConfig: default
+        maxConcurrentCalls: 30
+      notificationService:
+        baseConfig: default
+        maxConcurrentCalls: 25
+      enterpriseService:
+        baseConfig: default
+        maxConcurrentCalls: 20
+      bffService:
+        baseConfig: default
+        maxConcurrentCalls: 40
+
+# OAuth2 JWT validation is enforced by Spring Security resource server.
+# require-auth-header is a legacy presence-only check (disabled by default).
+# require-tenant-headers enforces X-Channel-Id / X-Client-Id on non-auth routes.
+app:
+  gateway:
+    require-auth-header: ${GATEWAY_REQUIRE_AUTH_HEADER:false}
+    require-tenant-headers: ${GATEWAY_REQUIRE_TENANT_HEADERS:true}
+
+logging:
+  level:
+    root: INFO
+    com.cards: INFO
+    org.springframework.cloud.gateway: INFO
