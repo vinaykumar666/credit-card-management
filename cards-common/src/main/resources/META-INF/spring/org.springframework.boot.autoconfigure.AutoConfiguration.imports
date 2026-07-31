@@ -1,2 +1,3 @@
 com.cards.common.config.CardsCommonAutoConfiguration
 com.cards.common.config.CardsCommonJdbcAutoConfiguration
+com.cards.common.config.CardsCommonServletAutoConfiguration
