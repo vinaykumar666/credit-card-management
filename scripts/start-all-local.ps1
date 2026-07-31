@@ -43,6 +43,18 @@ function Test-Command($name) {
     return [bool](Get-Command $name -ErrorAction SilentlyContinue)
 }
 
+# Native CLIs (java -version, etc.) write to stderr; with $ErrorActionPreference=Stop that becomes a terminating error.
+function Invoke-NativeText([scriptblock]$Command) {
+    $prev = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $output = & $Command 2>&1 | ForEach-Object { "$_" }
+        return ($output -join [Environment]::NewLine)
+    } finally {
+        $ErrorActionPreference = $prev
+    }
+}
+
 function Add-PathFront($dir) {
     if (-not $dir -or -not (Test-Path $dir)) { return }
     if ($env:Path -notlike "*$dir*") { $env:Path = "$dir;$env:Path" }
@@ -67,7 +79,7 @@ function Test-Admin {
 function Ensure-Java {
     Write-Step "Checking Java 21+"
     if (Test-Command "java") {
-        $v = & java -version 2>&1 | Out-String
+        $v = Invoke-NativeText { java -version }
         if ($v -match '"(\d+)' -and [int]$Matches[1] -ge 21) {
             Write-Ok "Found Java $($Matches[1]) on PATH"
             return
