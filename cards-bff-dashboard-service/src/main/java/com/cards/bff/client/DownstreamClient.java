@@ -1,6 +1,7 @@
 package com.cards.bff.client;
 
 import com.cards.bff.web.dto.AccountDto;
+import com.cards.bff.web.dto.BeneficiaryDto;
 import com.cards.bff.web.dto.InitiatePaymentRequest;
 import com.cards.bff.web.dto.NotificationDto;
 import com.cards.bff.web.dto.PaymentDto;
@@ -40,6 +41,12 @@ public class DownstreamClient {
             new ParameterizedTypeReference<>() {
             };
     private static final ParameterizedTypeReference<List<NotificationDto>> NOTIFICATION_LIST =
+            new ParameterizedTypeReference<>() {
+            };
+    private static final ParameterizedTypeReference<List<BeneficiaryDto>> BENEFICIARY_LIST =
+            new ParameterizedTypeReference<>() {
+            };
+    private static final ParameterizedTypeReference<List<PaymentDto>> PAYMENT_LIST =
             new ParameterizedTypeReference<>() {
             };
 
@@ -141,6 +148,76 @@ public class DownstreamClient {
                 .block();
     }
 
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "transferFallback")
+    public PaymentDto transfer(Object body) {
+        return gatewayWebClient.post()
+                .uri("/api/v1/payments/transfer")
+                .headers(propagateHeaders())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(PaymentDto.class)
+                .block();
+    }
+
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "billPayFallback")
+    public PaymentDto billPay(Object body) {
+        return gatewayWebClient.post()
+                .uri("/api/v1/payments/bill-pay")
+                .headers(propagateHeaders())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(PaymentDto.class)
+                .block();
+    }
+
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "paymentHistoryFallback")
+    public List<PaymentDto> paymentHistory(UUID userId) {
+        return gatewayWebClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/api/v1/payments").queryParam("userId", userId).build())
+                .headers(propagateHeaders())
+                .retrieve()
+                .bodyToMono(PAYMENT_LIST)
+                .block();
+    }
+
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "beneficiariesFallback")
+    public List<BeneficiaryDto> listBeneficiaries(UUID userId, boolean activeOnly) {
+        return gatewayWebClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/beneficiaries")
+                        .queryParam("userId", userId)
+                        .queryParam("activeOnly", activeOnly)
+                        .build())
+                .headers(propagateHeaders())
+                .retrieve()
+                .bodyToMono(BENEFICIARY_LIST)
+                .block();
+    }
+
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "createBeneficiaryFallback")
+    public BeneficiaryDto createBeneficiary(Object body) {
+        return gatewayWebClient.post()
+                .uri("/api/v1/beneficiaries")
+                .headers(propagateHeaders())
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(BeneficiaryDto.class)
+                .block();
+    }
+
+    @CircuitBreaker(name = "downstreamGateway", fallbackMethod = "deactivateBeneficiaryFallback")
+    public BeneficiaryDto deactivateBeneficiary(UUID id, UUID userId) {
+        return gatewayWebClient.delete()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/beneficiaries/{id}")
+                        .queryParam("userId", userId)
+                        .build(id))
+                .headers(propagateHeaders())
+                .retrieve()
+                .bodyToMono(BeneficiaryDto.class)
+                .block();
+    }
+
     /**
      * Circuit-breaker fallback for {@link #getAccountsByUser(UUID)}.
      *
@@ -206,6 +283,36 @@ public class DownstreamClient {
     @SuppressWarnings("unused")
     private PaymentDto initiatePaymentFallback(InitiatePaymentRequest request, Throwable cause) {
         throw toDownstream(cause, "initiate payment");
+    }
+
+    @SuppressWarnings("unused")
+    private PaymentDto transferFallback(Object body, Throwable cause) {
+        throw toDownstream(cause, "transfer money");
+    }
+
+    @SuppressWarnings("unused")
+    private PaymentDto billPayFallback(Object body, Throwable cause) {
+        throw toDownstream(cause, "bill payment");
+    }
+
+    @SuppressWarnings("unused")
+    private List<PaymentDto> paymentHistoryFallback(UUID userId, Throwable cause) {
+        throw toDownstream(cause, "payment history for " + userId);
+    }
+
+    @SuppressWarnings("unused")
+    private List<BeneficiaryDto> beneficiariesFallback(UUID userId, boolean activeOnly, Throwable cause) {
+        throw toDownstream(cause, "beneficiaries for " + userId);
+    }
+
+    @SuppressWarnings("unused")
+    private BeneficiaryDto createBeneficiaryFallback(Object body, Throwable cause) {
+        throw toDownstream(cause, "create beneficiary");
+    }
+
+    @SuppressWarnings("unused")
+    private BeneficiaryDto deactivateBeneficiaryFallback(UUID id, UUID userId, Throwable cause) {
+        throw toDownstream(cause, "deactivate beneficiary " + id);
     }
 
     /**

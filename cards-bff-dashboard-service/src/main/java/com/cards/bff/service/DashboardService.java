@@ -2,12 +2,16 @@ package com.cards.bff.service;
 
 import com.cards.bff.client.DownstreamClient;
 import com.cards.bff.web.dto.AccountDto;
+import com.cards.bff.web.dto.BeneficiaryDto;
+import com.cards.bff.web.dto.BeneficiaryRequestDto;
 import com.cards.bff.web.dto.DashboardResponse;
 import com.cards.bff.web.dto.InitiatePaymentRequest;
+import com.cards.bff.web.dto.MakePaymentRequestDto;
 import com.cards.bff.web.dto.NotificationDto;
 import com.cards.bff.web.dto.PaymentDto;
 import com.cards.bff.web.dto.TransactionDto;
 import com.cards.bff.web.dto.TransactionHistoryDto;
+import com.cards.bff.web.dto.TransferMoneyRequestDto;
 import com.cards.common.channel.ChannelClientContext;
 import com.cards.common.channel.ChannelClientHolder;
 import com.cards.common.error.DownstreamException;
@@ -110,6 +114,59 @@ public class DashboardService {
      */
     public PaymentDto initiatePayment(InitiatePaymentRequest request) {
         return downstreamClient.initiatePayment(request);
+    }
+
+    public PaymentDto transfer(UUID userId, TransferMoneyRequestDto request) {
+        return downstreamClient.transfer(java.util.Map.of(
+                "accountId", request.accountId(),
+                "userId", userId,
+                "beneficiaryId", request.beneficiaryId(),
+                "amount", request.amount(),
+                "currency", request.currency(),
+                "paymentMethod", request.paymentMethod(),
+                "remarks", request.remarks() == null ? "" : request.remarks()
+        ));
+    }
+
+    public PaymentDto makePayment(UUID userId, MakePaymentRequestDto request) {
+        java.util.Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("accountId", request.accountId());
+        body.put("userId", userId);
+        body.put("beneficiaryId", request.beneficiaryId());
+        body.put("payeeName", request.payeeName());
+        body.put("payeeAccountNumber", request.payeeAccountNumber());
+        body.put("payeeBankName", request.payeeBankName());
+        body.put("payeeIfscOrRouting", request.payeeIfscOrRouting());
+        body.put("amount", request.amount());
+        body.put("currency", request.currency());
+        body.put("paymentMethod", request.paymentMethod());
+        body.put("remarks", request.remarks());
+        body.put("billReference", request.billReference());
+        return downstreamClient.billPay(body);
+    }
+
+    public List<PaymentDto> paymentHistory(UUID userId) {
+        return DownstreamClient.orEmpty(downstreamClient.paymentHistory(userId));
+    }
+
+    public List<BeneficiaryDto> beneficiaries(UUID userId, boolean activeOnly) {
+        return DownstreamClient.orEmpty(downstreamClient.listBeneficiaries(userId, activeOnly));
+    }
+
+    public BeneficiaryDto createBeneficiary(UUID userId, BeneficiaryRequestDto request) {
+        return downstreamClient.createBeneficiary(java.util.Map.of(
+                "userId", userId,
+                "nickname", request.nickname(),
+                "beneficiaryName", request.beneficiaryName(),
+                "accountNumber", request.accountNumber(),
+                "bankName", request.bankName(),
+                "ifscOrRouting", request.ifscOrRouting(),
+                "beneficiaryType", request.beneficiaryType()
+        ));
+    }
+
+    public BeneficiaryDto deactivateBeneficiary(UUID id, UUID userId) {
+        return downstreamClient.deactivateBeneficiary(id, userId);
     }
 
     /**

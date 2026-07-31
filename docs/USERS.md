@@ -18,6 +18,16 @@ Accounts and sample transactions are created by `AccountDataInitializer` using t
 | Ada | `a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1` | 4111111111111111 | VISA |
 | Ben | `b2b2b2b2-b2b2-b2b2-b2b2-b2b2b2b2b2b2` | 5500000000000004 | MASTERCARD |
 
+## Seed beneficiaries (payees)
+
+| Owner | Beneficiary ID | Nickname | Type | Account |
+|-------|----------------|----------|------|---------|
+| Ada | `d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1` | Mom Home | PERSON | 998877665544 |
+| Ada | `d2d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2` | Electric Co | MERCHANT | UTIL99887766 |
+| Ben | `d3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3` | Workshop Rent | MERCHANT | 112233445566 |
+
+Banking how-to: [BANKING_FEATURES.md](BANKING_FEATURES.md)
+
 ## How to sign in (UI)
 
 1. Open http://localhost:4200 (dev) or http://localhost:8088 (Docker).

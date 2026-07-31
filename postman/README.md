@@ -14,9 +14,12 @@
 ## Run order (clear path)
 1. **01 Auth → Login (Ada)** — auto-saves `accessToken` + `userId`.
 2. **02 BFF → Dashboard** — proves tenant headers + JWT.
-3. **02 BFF → Initiate Payment** — publishes Kafka events.
-4. **02 BFF → Notifications** — after a few seconds, alerts appear.
-5. Optional: **03 Gateway** folder for direct domain APIs through the gateway.
+3. **02 BFF → List Beneficiaries** — seed payees (Mom Home, Electric Co).
+4. **02 BFF → Transfer Money** — P2P transfer to beneficiary.
+5. **02 BFF → Bill Pay** — merchant / utility payment.
+6. **02 BFF → Payment History** — all movements.
+7. **02 BFF → Notifications** — Kafka-driven alerts.
+8. Optional: **03 Gateway** for domain APIs directly.
 
 ## Headers (automatic)
 Collection pre-request script adds on every call:

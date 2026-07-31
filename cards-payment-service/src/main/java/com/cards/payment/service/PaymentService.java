@@ -3,14 +3,20 @@ package com.cards.payment.service;
 import com.cards.common.correlation.CorrelationConstants;
 import com.cards.common.error.ErrorCodes;
 import com.cards.common.error.NotFoundException;
+import com.cards.common.error.ValidationBusinessException;
 import com.cards.common.event.NotificationRequestedEvent;
 import com.cards.common.event.PaymentCompletedEvent;
 import com.cards.common.event.PaymentFailedEvent;
+import com.cards.payment.domain.Beneficiary;
 import com.cards.payment.domain.LedgerEntry;
 import com.cards.payment.domain.Payment;
+import com.cards.payment.domain.PaymentMethod;
 import com.cards.payment.domain.PaymentStatus;
+import com.cards.payment.domain.PaymentType;
 import com.cards.payment.dto.InitiatePaymentRequest;
+import com.cards.payment.dto.MakePaymentRequest;
 import com.cards.payment.dto.PaymentResponse;
+import com.cards.payment.dto.TransferMoneyRequest;
 import com.cards.payment.kafka.KafkaPaymentEventPublisher;
 import com.cards.payment.repository.LedgerEntryRepository;
 import com.cards.payment.repository.PaymentRepository;
@@ -24,13 +30,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 /**
- * Application service for creating and looking up payments.
- * Saves a pending payment, runs the matching strategy, then completes or fails it
- * with ledger updates and Kafka events.
+ * Orchestrates card payments, transfers to beneficiaries, and bill payments.
  */
 @Service
 public class PaymentService {
@@ -41,86 +46,189 @@ public class PaymentService {
     private final LedgerEntryRepository ledgerEntryRepository;
     private final PaymentStrategyFactory strategyFactory;
     private final KafkaPaymentEventPublisher eventPublisher;
+    private final BeneficiaryService beneficiaryService;
 
-    /**
-     * Creates the payment service with its persistence, strategy, and event dependencies.
-     *
-     * @param paymentRepository     repository for payment entities
-     * @param ledgerEntryRepository repository for ledger entries
-     * @param strategyFactory       factory that resolves the payment strategy
-     * @param eventPublisher        publisher for payment and notification Kafka events
-     */
     public PaymentService(
             PaymentRepository paymentRepository,
             LedgerEntryRepository ledgerEntryRepository,
             PaymentStrategyFactory strategyFactory,
-            KafkaPaymentEventPublisher eventPublisher
+            KafkaPaymentEventPublisher eventPublisher,
+            BeneficiaryService beneficiaryService
     ) {
         this.paymentRepository = paymentRepository;
         this.ledgerEntryRepository = ledgerEntryRepository;
         this.strategyFactory = strategyFactory;
         this.eventPublisher = eventPublisher;
+        this.beneficiaryService = beneficiaryService;
     }
 
     /**
-     * Creates a pending payment, runs the strategy for its method, and returns the final state.
-     * On success, writes a ledger debit and publishes completed and notification events.
-     * On failure, publishes failed and notification events.
-     *
-     * @param request details of the payment to start
-     * @return the payment after processing (completed or failed)
+     * Self / card payment (legacy + simple settlement without a beneficiary).
      */
     @Transactional
     public PaymentResponse initiate(InitiatePaymentRequest request) {
-        String correlationId = MDC.get(CorrelationConstants.MDC_CORRELATION_ID);
+        Payment payment = basePayment(
+                request.getAccountId(),
+                request.getUserId(),
+                request.getAmount(),
+                request.getCurrency(),
+                request.getPaymentMethod(),
+                PaymentType.CARD_PAYMENT,
+                null,
+                null,
+                null,
+                null,
+                null,
+                request.getRemarks(),
+                null
+        );
+        return process(payment);
+    }
 
-        Payment payment = Payment.builder()
-                .accountId(request.getAccountId())
-                .userId(request.getUserId())
-                .amount(request.getAmount())
-                .currency(request.getCurrency().toUpperCase())
-                .paymentMethod(request.getPaymentMethod())
-                .status(PaymentStatus.PENDING)
-                .correlationId(correlationId)
-                .build();
+    /**
+     * Transfers money to a saved beneficiary (P2P / account transfer).
+     */
+    @Transactional
+    public PaymentResponse transfer(TransferMoneyRequest request) {
+        Beneficiary beneficiary = beneficiaryService.requireActiveOwned(
+                request.getBeneficiaryId(), request.getUserId());
+        Payment payment = basePayment(
+                request.getAccountId(),
+                request.getUserId(),
+                request.getAmount(),
+                request.getCurrency(),
+                request.getPaymentMethod(),
+                PaymentType.TRANSFER,
+                beneficiary.getId(),
+                beneficiary.getBeneficiaryName(),
+                beneficiary.getAccountNumber(),
+                beneficiary.getBankName(),
+                beneficiary.getIfscOrRouting(),
+                request.getRemarks(),
+                "TRF-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase()
+        );
+        return process(payment);
+    }
 
+    /**
+     * Makes a bill / merchant payment using a saved merchant beneficiary or one-time payee details.
+     */
+    @Transactional
+    public PaymentResponse makePayment(MakePaymentRequest request) {
+        UUID beneficiaryId = null;
+        String name;
+        String account;
+        String bank;
+        String ifsc;
+
+        if (request.getBeneficiaryId() != null) {
+            Beneficiary beneficiary = beneficiaryService.requireActiveOwned(
+                    request.getBeneficiaryId(), request.getUserId());
+            beneficiaryId = beneficiary.getId();
+            name = beneficiary.getBeneficiaryName();
+            account = beneficiary.getAccountNumber();
+            bank = beneficiary.getBankName();
+            ifsc = beneficiary.getIfscOrRouting();
+        } else {
+            if (isBlank(request.getPayeeName()) || isBlank(request.getPayeeAccountNumber())
+                    || isBlank(request.getPayeeBankName()) || isBlank(request.getPayeeIfscOrRouting())) {
+                throw new ValidationBusinessException(ErrorCodes.PAY_008,
+                        "Provide beneficiaryId or full one-time payee details");
+            }
+            name = request.getPayeeName().trim();
+            account = request.getPayeeAccountNumber().trim();
+            bank = request.getPayeeBankName().trim();
+            ifsc = request.getPayeeIfscOrRouting().trim().toUpperCase();
+        }
+
+        String reference = !isBlank(request.getBillReference())
+                ? request.getBillReference().trim()
+                : "BILL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+
+        Payment payment = basePayment(
+                request.getAccountId(),
+                request.getUserId(),
+                request.getAmount(),
+                request.getCurrency(),
+                request.getPaymentMethod(),
+                PaymentType.BILL_PAYMENT,
+                beneficiaryId,
+                name,
+                account,
+                bank,
+                ifsc,
+                request.getRemarks(),
+                reference
+        );
+        return process(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getById(UUID id) {
+        return toResponse(paymentRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(ErrorCodes.PAY_001)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> listByUser(UUID userId) {
+        return paymentRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    private PaymentResponse process(Payment payment) {
         payment = paymentRepository.save(payment);
-        log.info("Payment created id={} method={} status=PENDING", payment.getId(), payment.getPaymentMethod());
+        log.info("Payment created id={} type={} status=PENDING", payment.getId(), payment.getPaymentType());
 
         PaymentStrategy strategy = strategyFactory.getStrategy(payment.getPaymentMethod());
         PaymentResult result = strategy.execute(payment);
-
         if (result.isSuccess()) {
             return completePayment(payment, result.getExternalRef());
         }
         return failPayment(payment, result.getFailureReason());
     }
 
-    /**
-     * Loads a payment by id and maps it to an API response.
-     *
-     * @param id payment identifier
-     * @return the payment as a {@link PaymentResponse}
-     * @throws NotFoundException if no payment exists for the id
-     */
-    @Transactional(readOnly = true)
-    public PaymentResponse getById(UUID id) {
-        Payment payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(ErrorCodes.PAY_001));
-        return toResponse(payment);
+    private Payment basePayment(
+            UUID accountId,
+            UUID userId,
+            java.math.BigDecimal amount,
+            String currency,
+            PaymentMethod method,
+            PaymentType type,
+            UUID beneficiaryId,
+            String beneficiaryName,
+            String beneficiaryAccount,
+            String bankName,
+            String ifsc,
+            String remarks,
+            String referenceNumber
+    ) {
+        return Payment.builder()
+                .accountId(accountId)
+                .userId(userId)
+                .amount(amount)
+                .currency(currency.toUpperCase())
+                .paymentMethod(method)
+                .paymentType(type)
+                .status(PaymentStatus.PENDING)
+                .correlationId(MDC.get(CorrelationConstants.MDC_CORRELATION_ID))
+                .beneficiaryId(beneficiaryId)
+                .beneficiaryName(beneficiaryName)
+                .beneficiaryAccount(beneficiaryAccount)
+                .bankName(bankName)
+                .ifscOrRouting(ifsc)
+                .remarks(remarks)
+                .referenceNumber(referenceNumber)
+                .build();
     }
 
-    /**
-     * Marks the payment completed, saves a debit ledger entry, and publishes related events.
-     *
-     * @param payment     payment to complete
-     * @param externalRef reference from the payment processor
-     * @return API response for the completed payment
-     */
     private PaymentResponse completePayment(Payment payment, String externalRef) {
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setExternalRef(externalRef);
         payment.setFailureReason(null);
+        if (isBlank(payment.getReferenceNumber())) {
+            payment.setReferenceNumber("PAY-" + payment.getId().toString().substring(0, 8).toUpperCase());
+        }
         payment = paymentRepository.save(payment);
 
         ledgerEntryRepository.save(LedgerEntry.builder()
@@ -147,29 +255,23 @@ public class PaymentService {
                 .notificationId(UUID.randomUUID())
                 .userId(payment.getUserId())
                 .channel("EMAIL")
-                .template("PAYMENT_COMPLETED")
+                .template(payment.getPaymentType() == PaymentType.TRANSFER ? "TRANSFER_COMPLETED" : "PAYMENT_COMPLETED")
                 .recipient(payment.getUserId().toString())
                 .placeholders(Map.of(
                         "paymentId", payment.getId().toString(),
                         "amount", payment.getAmount().toPlainString(),
                         "currency", payment.getCurrency(),
-                        "status", PaymentStatus.COMPLETED.name()
+                        "status", PaymentStatus.COMPLETED.name(),
+                        "beneficiary", payment.getBeneficiaryName() != null ? payment.getBeneficiaryName() : "self"
                 ))
                 .correlationId(payment.getCorrelationId())
                 .requestedAt(completedAt)
                 .build());
 
-        log.info("Payment completed id={} externalRef={}", payment.getId(), externalRef);
+        log.info("Payment completed id={} type={} ref={}", payment.getId(), payment.getPaymentType(), externalRef);
         return toResponse(payment);
     }
 
-    /**
-     * Marks the payment failed, stores the reason, and publishes related events.
-     *
-     * @param payment payment to fail
-     * @param reason  why the payment failed
-     * @return API response for the failed payment
-     */
     private PaymentResponse failPayment(Payment payment, String reason) {
         payment.setStatus(PaymentStatus.FAILED);
         payment.setFailureReason(reason);
@@ -204,16 +306,9 @@ public class PaymentService {
                 .requestedAt(failedAt)
                 .build());
 
-        log.info("Payment failed id={} reason={}", payment.getId(), reason);
         return toResponse(payment);
     }
 
-    /**
-     * Maps a {@link Payment} entity to a {@link PaymentResponse}.
-     *
-     * @param payment domain payment
-     * @return API response DTO
-     */
     private PaymentResponse toResponse(Payment payment) {
         return PaymentResponse.builder()
                 .id(payment.getId())
@@ -222,12 +317,24 @@ public class PaymentService {
                 .amount(payment.getAmount())
                 .currency(payment.getCurrency())
                 .paymentMethod(payment.getPaymentMethod())
+                .paymentType(payment.getPaymentType())
                 .status(payment.getStatus())
+                .beneficiaryId(payment.getBeneficiaryId())
+                .beneficiaryName(payment.getBeneficiaryName())
+                .beneficiaryAccount(payment.getBeneficiaryAccount())
+                .bankName(payment.getBankName())
+                .ifscOrRouting(payment.getIfscOrRouting())
+                .remarks(payment.getRemarks())
+                .referenceNumber(payment.getReferenceNumber())
                 .externalRef(payment.getExternalRef())
                 .failureReason(payment.getFailureReason())
                 .correlationId(payment.getCorrelationId())
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
                 .build();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

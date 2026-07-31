@@ -73,6 +73,40 @@ public class Payment {
     @Column(name = "correlation_id", length = 64)
     private String correlationId;
 
+    /** Banking purpose: transfer, bill pay, or card self-payment. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", nullable = false, length = 30)
+    @Builder.Default
+    private PaymentType paymentType = PaymentType.CARD_PAYMENT;
+
+    /** Saved beneficiary used for transfer / bill pay, when applicable. */
+    @Column(name = "beneficiary_id")
+    private UUID beneficiaryId;
+
+    /** Snapshot of payee name at payment time. */
+    @Column(name = "beneficiary_name")
+    private String beneficiaryName;
+
+    /** Snapshot of payee account number at payment time. */
+    @Column(name = "beneficiary_account", length = 34)
+    private String beneficiaryAccount;
+
+    /** Snapshot of payee bank name. */
+    @Column(name = "bank_name")
+    private String bankName;
+
+    /** Snapshot of IFSC / routing code. */
+    @Column(name = "ifsc_or_routing", length = 32)
+    private String ifscOrRouting;
+
+    /** Customer narration / remarks. */
+    @Column(length = 500)
+    private String remarks;
+
+    /** Human-friendly bank reference shown on receipts. */
+    @Column(name = "reference_number", length = 64)
+    private String referenceNumber;
+
     /** When the payment row was created. */
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

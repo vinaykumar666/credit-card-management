@@ -1,0 +1,136 @@
+.layout {
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  gap: 1.1rem;
+  align-items: start;
+}
+
+.panel,
+.list-panel {
+  padding: 1.35rem;
+  border-radius: 22px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 36px rgba(10, 46, 44, 0.06);
+  animation: rise-in 0.5s ease both;
+}
+
+.form-panel h2,
+.list-panel h2 {
+  margin: 0 0 1rem;
+  color: var(--forest);
+}
+
+form {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.state.ok {
+  color: var(--ok);
+  margin-bottom: 1rem;
+}
+
+.state.error {
+  margin-bottom: 1rem;
+}
+
+.card-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.payee-card {
+  padding: 1.15rem 1.2rem;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(145deg, rgba(10, 46, 44, 0.96), rgba(26, 107, 99, 0.88));
+  color: #f3fffb;
+  box-shadow: var(--shadow);
+  animation: rise-in 0.45s ease both;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.type-pill,
+.status {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.type-pill {
+  background: rgba(196, 163, 90, 0.35);
+  color: var(--gold-soft);
+}
+
+.payee-card h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #fffdf8;
+}
+
+.name {
+  margin: 0.25rem 0 0;
+  opacity: 0.85;
+}
+
+.account {
+  margin: 0.85rem 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.1em;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.ghost-danger {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: transparent;
+  color: #fff5f3;
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.ghost-danger:hover:not(:disabled) {
+  background: rgba(180, 35, 24, 0.35);
+  border-color: rgba(255, 180, 170, 0.5);
+}
+
+.ghost-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .layout,
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

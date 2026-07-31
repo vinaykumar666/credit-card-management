@@ -81,6 +81,31 @@ export interface DashboardResponse {
 }
 
 export type PaymentMethod = 'CARD' | 'UPI' | 'NET_BANKING' | 'EXTERNAL';
+export type BeneficiaryType = 'PERSON' | 'MERCHANT' | 'INTERNAL';
+export type PaymentType = 'CARD_PAYMENT' | 'TRANSFER' | 'BILL_PAYMENT';
+
+export interface Beneficiary {
+  id: string;
+  userId: string;
+  nickname: string;
+  beneficiaryName: string;
+  accountNumber: string;
+  bankName: string;
+  ifscOrRouting: string;
+  beneficiaryType: BeneficiaryType;
+  status: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateBeneficiaryRequest {
+  nickname: string;
+  beneficiaryName: string;
+  accountNumber: string;
+  bankName: string;
+  ifscOrRouting: string;
+  beneficiaryType: BeneficiaryType;
+}
 
 export interface InitiatePaymentRequest {
   accountId: string;
@@ -90,6 +115,29 @@ export interface InitiatePaymentRequest {
   paymentMethod: PaymentMethod;
 }
 
+export interface TransferMoneyRequest {
+  accountId: string;
+  beneficiaryId: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  remarks?: string;
+}
+
+export interface MakePaymentRequest {
+  accountId: string;
+  beneficiaryId?: string;
+  payeeName?: string;
+  payeeAccountNumber?: string;
+  payeeBankName?: string;
+  payeeIfscOrRouting?: string;
+  amount: number;
+  currency: string;
+  paymentMethod: PaymentMethod;
+  remarks?: string;
+  billReference?: string;
+}
+
 export interface PaymentResponse {
   id: string;
   accountId: string;
@@ -97,7 +145,15 @@ export interface PaymentResponse {
   amount: number;
   currency: string;
   paymentMethod: PaymentMethod;
+  paymentType?: PaymentType | string;
   status: string;
+  beneficiaryId?: string;
+  beneficiaryName?: string;
+  beneficiaryAccount?: string;
+  bankName?: string;
+  ifscOrRouting?: string;
+  remarks?: string;
+  referenceNumber?: string;
   externalRef?: string;
   failureReason?: string;
   correlationId?: string;

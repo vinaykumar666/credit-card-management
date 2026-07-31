@@ -11,7 +11,8 @@ not just *what* was built.
 - [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) — spoon-fed local run
 - [docs/KAFKA_SETUP.md](docs/KAFKA_SETUP.md) — Kafka step-by-step
 - [postman/README.md](postman/README.md) — Postman import + run order
-- [docs/USERS.md](docs/USERS.md) — seed users
+- [docs/USERS.md](docs/USERS.md) — seed users & payees
+- [docs/BANKING_FEATURES.md](docs/BANKING_FEATURES.md) — transfer, bill pay, beneficiaries
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) · [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md)
 - [docs/CLASS_CATALOG.md](docs/CLASS_CATALOG.md) · [docs/CI_CD.md](docs/CI_CD.md) · [docs/JAVA21.md](docs/JAVA21.md)
 

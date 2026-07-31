@@ -38,6 +38,7 @@
     { "key": "refreshToken", "value": "" },
     { "key": "userId", "value": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa" },
     { "key": "accountId", "value": "a1a1a1a1-a1a1-a1a1-a1a1-a1a1a1a1a1a1" },
+    { "key": "beneficiaryId", "value": "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1" },
     { "key": "paymentId", "value": "" }
   ],
   "item": [
@@ -265,7 +266,71 @@
               "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"userId\": \"{{userId}}\",\n  \"amount\": 25.50,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"CARD\"\n}"
             },
             "url": "{{bffUrl}}/bff/v1/payments",
-            "description": "Triggers payment saga → Kafka payment.completed/failed → notifications."
+            "description": "Card self-settle. Triggers Kafka payment.completed/failed → notifications."
+          }
+        },
+        {
+          "name": "List Beneficiaries",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/beneficiaries?activeOnly=true"
+          }
+        },
+        {
+          "name": "Create Beneficiary",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"College Fund\",\n  \"beneficiaryName\": \"State University\",\n  \"accountNumber\": \"556677889900\",\n  \"bankName\": \"Campus Bank\",\n  \"ifscOrRouting\": \"CAMP0001111\",\n  \"beneficiaryType\": \"MERCHANT\"\n}"
+            },
+            "url": "{{bffUrl}}/bff/v1/beneficiaries"
+          }
+        },
+        {
+          "name": "Transfer Money",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const j = pm.response.json();",
+                  "  if (j.id) pm.collectionVariables.set('paymentId', j.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"beneficiaryId\": \"{{beneficiaryId}}\",\n  \"amount\": 75.00,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"UPI\",\n  \"remarks\": \"Family support\"\n}"
+            },
+            "url": "{{bffUrl}}/bff/v1/payments/transfer",
+            "description": "Transfer to saved beneficiary (Ada seed: Mom Home = d1d1d1d1-...)."
+          }
+        },
+        {
+          "name": "Bill Pay",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"beneficiaryId\": \"d2d2d2d2-d2d2-d2d2-d2d2-d2d2d2d2d2d2\",\n  \"amount\": 112.40,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"NET_BANKING\",\n  \"remarks\": \"March electric\",\n  \"billReference\": \"ELEC-2026-03\"\n}"
+            },
+            "url": "{{bffUrl}}/bff/v1/payments/bill-pay"
+          }
+        },
+        {
+          "name": "Payment History",
+          "request": {
+            "method": "GET",
+            "url": "{{bffUrl}}/bff/v1/payments"
           }
         }
       ]

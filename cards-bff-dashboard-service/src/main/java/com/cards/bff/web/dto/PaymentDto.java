@@ -5,20 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Payment details returned after create or lookup through the BFF.
- *
- * @param id             payment identifier
- * @param accountId      related account
- * @param userId         owning user
- * @param amount         payment amount
- * @param currency       ISO currency code
- * @param paymentMethod  payment method used
- * @param status         current payment status
- * @param externalRef    external processor reference when present
- * @param failureReason  reason when the payment failed
- * @param correlationId  correlation ID for tracing
- * @param createdAt      creation timestamp
- * @param updatedAt      last update timestamp
+ * Payment / transfer details returned to the UI.
  */
 public record PaymentDto(
         UUID id,
@@ -27,7 +14,15 @@ public record PaymentDto(
         BigDecimal amount,
         String currency,
         String paymentMethod,
+        String paymentType,
         String status,
+        UUID beneficiaryId,
+        String beneficiaryName,
+        String beneficiaryAccount,
+        String bankName,
+        String ifscOrRouting,
+        String remarks,
+        String referenceNumber,
         String externalRef,
         String failureReason,
         String correlationId,

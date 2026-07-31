@@ -1,7 +1,9 @@
 package com.cards.payment.web;
 
 import com.cards.payment.dto.InitiatePaymentRequest;
+import com.cards.payment.dto.MakePaymentRequest;
 import com.cards.payment.dto.PaymentResponse;
+import com.cards.payment.dto.TransferMoneyRequest;
 import com.cards.payment.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,13 +13,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
- * REST controller for payment APIs under {@code /api/v1/payments}.
- * Exposes endpoints to start a payment and fetch one by id.
+ * Banking payment APIs: card settlement, transfer to beneficiary, bill pay, and history.
  */
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -25,34 +28,35 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    /**
-     * Creates the controller with the payment application service.
-     *
-     * @param paymentService service that handles payment business logic
-     */
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
     }
 
-    /**
-     * Starts a new payment from the request body.
-     *
-     * @param request validated payment initiation details
-     * @return HTTP 201 with the resulting payment state
-     */
+    /** Self / card settlement (no beneficiary). */
     @PostMapping
     public ResponseEntity<PaymentResponse> initiate(@Valid @RequestBody InitiatePaymentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.initiate(request));
     }
 
-    /**
-     * Returns a payment by its id.
-     *
-     * @param id payment identifier
-     * @return the payment details
-     */
+    /** Transfer money to a saved beneficiary. */
+    @PostMapping("/transfer")
+    public ResponseEntity<PaymentResponse> transfer(@Valid @RequestBody TransferMoneyRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.transfer(request));
+    }
+
+    /** Make a bill / merchant payment. */
+    @PostMapping("/bill-pay")
+    public ResponseEntity<PaymentResponse> makePayment(@Valid @RequestBody MakePaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.makePayment(request));
+    }
+
     @GetMapping("/{id}")
     public PaymentResponse getById(@PathVariable UUID id) {
         return paymentService.getById(id);
+    }
+
+    @GetMapping
+    public List<PaymentResponse> history(@RequestParam UUID userId) {
+        return paymentService.listByUser(userId);
     }
 }

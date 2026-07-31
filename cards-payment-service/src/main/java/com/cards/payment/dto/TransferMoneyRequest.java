@@ -11,36 +11,31 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 /**
- * Request body for starting a new payment.
- * Carries the account, user, amount, currency, and payment method.
+ * Transfer money from the customer's card/account to a saved beneficiary.
  */
 @Data
-public class InitiatePaymentRequest {
+public class TransferMoneyRequest {
 
-    /** Account to charge. */
     @NotNull
     private UUID accountId;
 
-    /** User starting the payment. */
     @NotNull
     private UUID userId;
 
-    /** Amount to pay; must be greater than zero. */
     @NotNull
-    @DecimalMin(value = "0.01", message = "amount must be greater than zero")
+    private UUID beneficiaryId;
+
+    @NotNull
+    @DecimalMin(value = "0.01")
     private BigDecimal amount;
 
-    /** ISO currency code (exactly 3 letters). */
     @NotBlank
     @Size(min = 3, max = 3)
     private String currency;
 
-    /** How the customer will pay. */
     @NotNull
     private PaymentMethod paymentMethod;
 
-    /** Optional narration for the settlement. */
     @Size(max = 500)
     private String remarks;
 }
-

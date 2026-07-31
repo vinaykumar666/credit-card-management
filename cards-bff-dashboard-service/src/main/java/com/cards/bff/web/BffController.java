@@ -2,16 +2,21 @@ package com.cards.bff.web;
 
 import com.cards.bff.service.DashboardService;
 import com.cards.bff.web.dto.AccountDto;
+import com.cards.bff.web.dto.BeneficiaryDto;
+import com.cards.bff.web.dto.BeneficiaryRequestDto;
 import com.cards.bff.web.dto.DashboardResponse;
 import com.cards.bff.web.dto.InitiatePaymentRequest;
+import com.cards.bff.web.dto.MakePaymentRequestDto;
 import com.cards.bff.web.dto.NotificationDto;
 import com.cards.bff.web.dto.PaymentDto;
 import com.cards.bff.web.dto.TransactionHistoryDto;
+import com.cards.bff.web.dto.TransferMoneyRequestDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,8 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * REST API for the dashboard BFF under {@code /bff/v1}.
- * Exposes aggregated dashboard data and thin proxies for accounts, transactions, notifications, and payments.
+ * BFF APIs for dashboard, beneficiaries, transfers, and bill payments.
  */
 @RestController
 @RequestMapping("/bff/v1")
@@ -35,36 +39,16 @@ public class BffController {
 
     private final DashboardService dashboardService;
 
-    /**
-     * Returns the aggregated dashboard for the authenticated user.
-     *
-     * @param jwt JWT of the signed-in user
-     * @return dashboard payload with accounts, recent transactions, and notifications
-     */
     @GetMapping("/dashboard")
     public DashboardResponse dashboard(@AuthenticationPrincipal Jwt jwt) {
         return dashboardService.getDashboard(userId(jwt), jwt.getClaimAsString("email"));
     }
 
-    /**
-     * Lists credit accounts for the authenticated user.
-     *
-     * @param jwt JWT of the signed-in user
-     * @return list of accounts
-     */
     @GetMapping("/accounts")
     public List<AccountDto> accounts(@AuthenticationPrincipal Jwt jwt) {
         return dashboardService.getAccounts(userId(jwt));
     }
 
-    /**
-     * Returns a page of transactions for the given account.
-     *
-     * @param id   account ID
-     * @param page zero-based page index (default 0)
-     * @param size page size (default 20)
-     * @return paged transaction history
-     */
     @GetMapping("/accounts/{id}/transactions")
     public TransactionHistoryDto transactions(
             @PathVariable UUID id,
@@ -73,47 +57,69 @@ public class BffController {
         return dashboardService.getTransactions(id, page, size);
     }
 
-    /**
-     * Lists notifications for the authenticated user.
-     *
-     * @param jwt JWT of the signed-in user
-     * @return list of notifications
-     */
     @GetMapping("/notifications")
     public List<NotificationDto> notifications(@AuthenticationPrincipal Jwt jwt) {
         return dashboardService.getNotifications(userId(jwt));
     }
 
-    /**
-     * Initiates a payment for the authenticated user.
-     * The JWT subject is used as {@code userId} in the request sent downstream.
-     *
-     * @param jwt     JWT of the signed-in user
-     * @param request payment fields from the client (userId in the body is replaced with the JWT subject)
-     * @return created payment details
-     */
+    @GetMapping("/beneficiaries")
+    public List<BeneficiaryDto> beneficiaries(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(defaultValue = "true") boolean activeOnly) {
+        return dashboardService.beneficiaries(userId(jwt), activeOnly);
+    }
+
+    @PostMapping("/beneficiaries")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BeneficiaryDto createBeneficiary(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody BeneficiaryRequestDto request) {
+        return dashboardService.createBeneficiary(userId(jwt), request);
+    }
+
+    @DeleteMapping("/beneficiaries/{id}")
+    public BeneficiaryDto deactivateBeneficiary(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID id) {
+        return dashboardService.deactivateBeneficiary(id, userId(jwt));
+    }
+
     @PostMapping("/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public PaymentDto initiatePayment(
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody InitiatePaymentRequest request) {
         UUID subject = userId(jwt);
-        InitiatePaymentRequest payload = new InitiatePaymentRequest(
+        return dashboardService.initiatePayment(new InitiatePaymentRequest(
                 request.accountId(),
                 subject,
                 request.amount(),
                 request.currency(),
                 request.paymentMethod()
-        );
-        return dashboardService.initiatePayment(payload);
+        ));
     }
 
-    /**
-     * Reads the user ID from the JWT subject claim.
-     *
-     * @param jwt authenticated JWT
-     * @return user UUID
-     */
+    @PostMapping("/payments/transfer")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PaymentDto transfer(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody TransferMoneyRequestDto request) {
+        return dashboardService.transfer(userId(jwt), request);
+    }
+
+    @PostMapping("/payments/bill-pay")
+    @ResponseStatus(HttpStatus.CREATED)
+    public PaymentDto billPay(
+            @AuthenticationPrincipal Jwt jwt,
+            @Valid @RequestBody MakePaymentRequestDto request) {
+        return dashboardService.makePayment(userId(jwt), request);
+    }
+
+    @GetMapping("/payments")
+    public List<PaymentDto> paymentHistory(@AuthenticationPrincipal Jwt jwt) {
+        return dashboardService.paymentHistory(userId(jwt));
+    }
+
     private static UUID userId(Jwt jwt) {
         return UUID.fromString(jwt.getSubject());
     }

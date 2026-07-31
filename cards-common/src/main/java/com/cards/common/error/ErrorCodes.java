@@ -34,6 +34,14 @@ public final class ErrorCodes {
     public static final String PAY_003 = "PAY_003";
     /** Enterprise payment network unavailable. */
     public static final String PAY_004 = "PAY_004";
+    /** Beneficiary / payee not found. */
+    public static final String PAY_005 = "PAY_005";
+    /** Beneficiary is inactive or not allowed. */
+    public static final String PAY_006 = "PAY_006";
+    /** Beneficiary already exists for this account number. */
+    public static final String PAY_007 = "PAY_007";
+    /** Invalid transfer or bill-payment request. */
+    public static final String PAY_008 = "PAY_008";
     /** Notification not found. */
     public static final String NOTIF_001 = "NOTIF_001";
     /** Unsupported notification channel. */

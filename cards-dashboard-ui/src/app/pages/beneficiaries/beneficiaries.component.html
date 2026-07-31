@@ -1,0 +1,99 @@
+<section class="page">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Directory</p>
+      <h1>Payees</h1>
+      <p class="sub">Save trusted people, merchants, and internal accounts for transfers and bill payments.</p>
+    </div>
+  </header>
+
+  @if (error()) {
+    <p class="state error" role="alert">{{ error() }}</p>
+  }
+  @if (success()) {
+    <p class="state ok" role="status">{{ success() }}</p>
+  }
+
+  <div class="layout">
+    <section class="panel form-panel">
+      <h2>Add payee</h2>
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <div class="row">
+          <label>
+            <span>Nickname</span>
+            <input formControlName="nickname" placeholder="Mom, Electric Co…" />
+          </label>
+          <label>
+            <span>Type</span>
+            <select formControlName="beneficiaryType">
+              @for (type of types; track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        <label>
+          <span>Beneficiary name</span>
+          <input formControlName="beneficiaryName" />
+        </label>
+
+        <label>
+          <span>Account number</span>
+          <input formControlName="accountNumber" />
+        </label>
+
+        <div class="row">
+          <label>
+            <span>Bank name</span>
+            <input formControlName="bankName" />
+          </label>
+          <label>
+            <span>IFSC / Routing</span>
+            <input formControlName="ifscOrRouting" />
+          </label>
+        </div>
+
+        <button type="submit" class="primary-btn" [disabled]="submitting()">
+          {{ submitting() ? 'Saving…' : 'Save payee' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="list-panel">
+      <h2>Active payees</h2>
+
+      @if (loading()) {
+        <p class="state">Loading payees…</p>
+      } @else if (!beneficiaries().length) {
+        <p class="state">No active payees yet. Add one to get started.</p>
+      } @else {
+        <div class="card-grid">
+          @for (b of beneficiaries(); track b.id) {
+            <article class="payee-card">
+              <div class="card-top">
+                <span class="type-pill">{{ b.beneficiaryType }}</span>
+                <span class="status">{{ b.status }}</span>
+              </div>
+              <h3>{{ b.nickname }}</h3>
+              <p class="name">{{ b.beneficiaryName }}</p>
+              <p class="account">{{ maskAccount(b.accountNumber) }}</p>
+              <div class="meta">
+                <span>{{ b.bankName }}</span>
+                <span>{{ b.ifscOrRouting }}</span>
+              </div>
+              <button
+                type="button"
+                class="ghost-danger"
+                [disabled]="deactivatingId() === b.id"
+                (click)="deactivate(b.id)"
+              >
+                {{ deactivatingId() === b.id ? 'Deactivating…' : 'Deactivate' }}
+              </button>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</section>

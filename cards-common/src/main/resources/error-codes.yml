@@ -42,6 +42,18 @@ error:
     PAY_004:
       httpStatus: 503
       message: "Enterprise payment network unavailable"
+    PAY_005:
+      httpStatus: 404
+      message: "Beneficiary not found"
+    PAY_006:
+      httpStatus: 400
+      message: "Beneficiary is inactive or not allowed for this operation"
+    PAY_007:
+      httpStatus: 409
+      message: "Beneficiary already exists for this account number"
+    PAY_008:
+      httpStatus: 400
+      message: "Invalid transfer or bill payment request"
     NOTIF_001:
       httpStatus: 404
       message: "Notification not found"
