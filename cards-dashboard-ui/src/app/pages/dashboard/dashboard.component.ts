@@ -31,7 +31,7 @@ export class DashboardComponent implements OnInit {
         this.data.set(response);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your home screen. Please try again.'));
         this.loading.set(false);
       },

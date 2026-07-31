@@ -102,7 +102,7 @@ export class PaymentsComponent implements OnInit {
         }
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your cards. Please try again.'));
         this.loading.set(false);
       },
@@ -121,7 +121,7 @@ export class PaymentsComponent implements OnInit {
           this.billForm.patchValue({ beneficiaryId: merchants[0].id });
         }
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your payees. Please try again.'));
       },
     });
@@ -143,7 +143,7 @@ export class PaymentsComponent implements OnInit {
         this.history.set(rows ?? []);
         this.historyLoading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your payment history. Please try again.'));
         this.historyLoading.set(false);
       },
@@ -175,7 +175,7 @@ export class PaymentsComponent implements OnInit {
           this.result.set(response);
           this.submitting.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(toUserMessage(err, 'Transfer could not be completed. Please try again.'));
           this.submitting.set(false);
         },
@@ -233,7 +233,7 @@ export class PaymentsComponent implements OnInit {
           this.result.set(response);
           this.submitting.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(toUserMessage(err, 'Bill payment could not be completed. Please try again.'));
           this.submitting.set(false);
         },
@@ -270,7 +270,7 @@ export class PaymentsComponent implements OnInit {
           this.result.set(response);
           this.submitting.set(false);
         },
-        error: (err) => {
+        error: (err: unknown) => {
           this.error.set(toUserMessage(err, 'Payment could not be started. Please try again.'));
           this.submitting.set(false);
         },

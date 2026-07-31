@@ -36,7 +36,7 @@ export class AccountsComponent implements OnInit {
           this.selectAccount(accounts[0].id);
         }
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your cards. Please try again.'));
         this.loading.set(false);
       },
@@ -53,7 +53,7 @@ export class AccountsComponent implements OnInit {
         this.transactions.set(list);
         this.txLoading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load spending history. Please try again.'));
         this.txLoading.set(false);
       },

@@ -44,7 +44,7 @@ export class BeneficiariesComponent implements OnInit {
         this.beneficiaries.set(list ?? []);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your payees. Please try again.'));
         this.loading.set(false);
       },
@@ -75,7 +75,7 @@ export class BeneficiariesComponent implements OnInit {
         this.submitting.set(false);
         this.loadBeneficiaries();
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not save this payee. Please check the details and try again.'));
         this.submitting.set(false);
       },
@@ -93,7 +93,7 @@ export class BeneficiariesComponent implements OnInit {
         this.deactivatingId.set(null);
         this.loadBeneficiaries();
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not remove this payee. Please try again.'));
         this.deactivatingId.set(null);
       },

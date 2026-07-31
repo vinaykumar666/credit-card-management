@@ -30,7 +30,7 @@ export class NotificationsComponent implements OnInit {
         this.items.set(items ?? []);
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.error.set(toUserMessage(err, 'We could not load your messages. Please try again.'));
         this.loading.set(false);
       },

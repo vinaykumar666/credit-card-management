@@ -66,7 +66,7 @@ export class LoginComponent {
         this.loading.set(false);
         void this.router.navigate(['/dashboard']);
       },
-      error: (err) => {
+      error: (err: unknown) => {
         this.loading.set(false);
         this.error.set(
           toUserMessage(err, 'Sign-in did not work. Check your email and password, then try again.'),
