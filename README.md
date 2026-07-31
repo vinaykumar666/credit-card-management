@@ -20,7 +20,21 @@ not just *what* was built.
 
 ## 0. Getting Started
 
-### Prerequisites
+### One-click on Windows (recommended — **no Docker**)
+1. Have (or let the script install) native **PostgreSQL** on Windows. Your machine already can use `postgresql-x64-*` service.
+2. Right-click **`start-all-local.bat`** → **Run as administrator** (once, so Postgres password can be set to `admin`).
+3. Wait — script finds/downloads Java / Maven / Node / Kafka, configures Postgres + pgAdmin, builds, and starts every service + Angular.
+
+| What | URL / credentials |
+|------|-------------------|
+| UI | http://localhost:4200 — `ada.lovelace@cards.local` / `Password123!` |
+| pgAdmin | desktop app — master/DB password **`admin`** |
+| Postgres | `localhost:5432` — user `cards` / password **`admin`** |
+| Kafka | `localhost:9092` (native download under `.runtime`) |
+
+Stop apps + Kafka: **`stop-all-local.bat`** (leaves Windows Postgres service running).
+
+### Prerequisites (manual path)
 - Java 21, Maven 3.9+, Node 20+ (Angular)
 - **Native local (no Docker):** PostgreSQL 16 + Kafka on `localhost` — see [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
 - Optional: Docker Compose, kubectl
@@ -30,7 +44,7 @@ not just *what* was built.
 mvn clean verify
 ```
 
-### Run locally (no Docker — recommended)
+### Run locally (manual, no one-click)
 1. Create DBs: `psql -U postgres -f infra/postgres/init-databases.sql`
 2. Start Kafka on `localhost:9092` — [docs/KAFKA_SETUP.md](docs/KAFKA_SETUP.md)
 3. Start services: `.\scripts\run-local-no-docker.ps1` (or Maven per service)
@@ -38,7 +52,7 @@ mvn clean verify
 
 Full spoon-fed steps: **[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)**
 
-### Optional: Docker Compose
+### Optional: full Docker Compose (apps in containers too)
 ```bash
 docker compose up --build
 ```

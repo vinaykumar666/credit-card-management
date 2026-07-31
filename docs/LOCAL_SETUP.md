@@ -1,9 +1,29 @@
 # Local Setup Guide (Spoon-Fed)
 
-**Preferred for daily work: no Docker.**  
-Run PostgreSQL + Kafka on the machine, then start every Spring Boot service and Angular with Maven/npm.
+## One-click Windows (easiest — **no Docker**)
 
-Docker Compose remains an optional “all-in-one” shortcut at the end of this doc.
+Uses **zero containers** (saves disk). Native PostgreSQL service + portable Kafka under `.runtime`.
+
+1. Right-click **`start-all-local.bat`** → **Run as administrator** (needed once to set DB password to `admin`).
+2. Wait for new windows (Kafka, 7 Spring services, Angular).
+3. Script will winget-install PostgreSQL / pgAdmin only if missing; Java / Maven / Node / Kafka download into `.runtime` if not on PATH.
+
+| Piece | URL / credentials |
+|-------|-------------------|
+| Angular UI | http://localhost:4200 — `ada.lovelace@cards.local` / `Password123!` |
+| pgAdmin | desktop app — password **`admin`**; server `localhost:5432` / `cards` / **`admin`** |
+| Postgres | `localhost:5432` — `cards` / **`admin`** |
+| Kafka | `localhost:9092` (native) |
+
+Stop apps + Kafka: **`stop-all-local.bat`**.
+
+Infra only: `powershell -File scripts\start-all-local.ps1 -InfraOnly`
+
+---
+
+**Manual path:** sections below (same native stack, step-by-step).
+
+Optional full Docker Compose (apps in containers) is at the end — skip it if you are low on disk.
 
 ---
 
@@ -21,6 +41,7 @@ Docker Compose remains an optional “all-in-one” shortcut at the end of this 
 | Enterprise | 8085 |
 | Postgres | localhost:5432 |
 | Kafka | localhost:9092 |
+| pgAdmin (one-click) | desktop app (password admin) |
 
 Defaults in `application.yml` already point at `localhost` — no Docker hostnames required.
 
