@@ -5,7 +5,7 @@
 
 .NOTES
   Double-click start-all-local.bat (Run as Administrator recommended once for Postgres password).
-  Postgres: cards / admin on localhost:5432
+  Postgres: postgres / admin on localhost:5432
   pgAdmin master / DB password: admin
 #>
 param(
@@ -26,7 +26,7 @@ $KafkaData = Join-Path $Runtime "kafka-data"
 $KafkaMarker = Join-Path $Runtime "kafka-formatted.ok"
 New-Item -ItemType Directory -Force -Path $Tools, $Logs, $KafkaData | Out-Null
 
-$DbUser = "cards"
+$DbUser = "postgres"
 $DbPassword = "admin"
 $UiUrl = "http://localhost:4200"
 $script:PsqlExe = $null
@@ -267,33 +267,16 @@ function Restore-PgHba {
 }
 
 function Ensure-PostgresAuthAndDbs {
-    Write-Step "Configuring Postgres user/password = cards / admin"
+    Write-Step "Configuring Postgres user/password = postgres / admin"
     Start-PostgresService
 
-    $loginOk = (Test-PgLogin $DbUser $DbPassword "postgres") -or (Test-PgLogin "postgres" $DbPassword "postgres")
+    $loginOk = Test-PgLogin $DbUser $DbPassword "postgres"
     if (-not $loginOk) {
         Write-Warn "Cannot login with password 'admin' — temporarily enabling local trust to reset..."
         Enable-PgTrust
         try {
             $env:PGPASSWORD = ""
-            $sql = @"
-DO `$`$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cards') THEN
-    CREATE ROLE cards LOGIN PASSWORD 'admin' SUPERUSER CREATEDB;
-  ELSE
-    ALTER ROLE cards WITH LOGIN PASSWORD 'admin' SUPERUSER CREATEDB;
-  END IF;
-  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'postgres') THEN
-    ALTER ROLE postgres WITH PASSWORD 'admin';
-  END IF;
-END
-`$`$;
-"@
-            & $script:PsqlExe -U postgres -d postgres -h 127.0.0.1 -p 5432 -v ON_ERROR_STOP=1 -c $sql
-            if ($LASTEXITCODE -ne 0) {
-                & $script:PsqlExe -U cards -d postgres -h 127.0.0.1 -p 5432 -v ON_ERROR_STOP=1 -c $sql
-            }
+            & $script:PsqlExe -U postgres -d postgres -h 127.0.0.1 -p 5432 -v ON_ERROR_STOP=1 -c "ALTER ROLE postgres WITH LOGIN PASSWORD 'admin';"
         } finally {
             Restore-PgHba
         }
@@ -302,57 +285,37 @@ END
         }
         Write-Ok "Password reset to admin"
     } else {
-        Write-Ok "Login with password admin works"
-        # Ensure cards role exists with admin password
-        $env:PGPASSWORD = $DbPassword
-        $super = if (Test-PgLogin "postgres" $DbPassword "postgres") { "postgres" } else { $DbUser }
-        $sql = @"
-DO `$`$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cards') THEN
-    CREATE ROLE cards LOGIN PASSWORD 'admin' SUPERUSER CREATEDB;
-  ELSE
-    ALTER ROLE cards WITH LOGIN PASSWORD 'admin' SUPERUSER CREATEDB;
-  END IF;
-END
-`$`$;
-"@
-        & $script:PsqlExe -U $super -d postgres -h 127.0.0.1 -p 5432 -v ON_ERROR_STOP=1 -c $sql 1>$null
-        Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
+        Write-Ok "Login as postgres / admin works"
     }
 
     Write-Step "Ensuring application databases"
     $prev = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     $env:PGPASSWORD = $DbPassword
-    $super = if (Test-PgLogin "postgres" $DbPassword "postgres") { "postgres" } else { $DbUser }
-    $created = 0
     foreach ($db in @("auth_db", "account_db", "payment_db", "notification_db")) {
-        $raw = & $script:PsqlExe -U $super -d postgres -h 127.0.0.1 -tAc "SELECT 1 FROM pg_database WHERE datname='$db'" 2>$null
+        $raw = & $script:PsqlExe -U $DbUser -d postgres -h 127.0.0.1 -tAc "SELECT 1 FROM pg_database WHERE datname='$db'" 2>$null
         $exists = ("$raw").Trim()
         if ($exists -ne "1") {
-            & $script:PsqlExe -U $super -d postgres -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "CREATE DATABASE $db OWNER cards"
+            & $script:PsqlExe -U $DbUser -d postgres -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "CREATE DATABASE $db OWNER postgres"
             if ($LASTEXITCODE -ne 0) {
                 $ErrorActionPreference = $prev
                 Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
                 throw "Failed to create database $db. Run: powershell -File scripts\ensure-databases.ps1"
             }
             Write-Ok "Created $db"
-            $created++
         } else {
             Write-Ok "$db already exists"
         }
     }
-    # Hard verify account_db (common failure point for account-details-service)
     & $script:PsqlExe -U $DbUser -d account_db -h 127.0.0.1 -v ON_ERROR_STOP=1 -c "SELECT 1" 1>$null 2>$null
     if ($LASTEXITCODE -ne 0) {
         $ErrorActionPreference = $prev
         Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
-        throw "account_db is not reachable as cards/admin. Run: powershell -File scripts\ensure-databases.ps1"
+        throw "account_db is not reachable as postgres/admin. Run: powershell -File scripts\ensure-databases.ps1"
     }
     Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
     $ErrorActionPreference = $prev
-    Write-Ok "Verified cards can connect to account_db"
+    Write-Ok "Verified postgres can connect to account_db"
 }
 
 function Test-PortOpen([int]$port) {
@@ -473,10 +436,10 @@ function Ensure-PgAdmin {
         Start-Process $pgAdmin | Out-Null
         Write-Ok "Launched pgAdmin: $pgAdmin"
         Write-Ok "Master password / DB password: admin"
-        Write-Ok "Register server: Host=localhost Port=5432 User=cards Password=admin"
+        Write-Ok "Register server: Host=localhost Port=5432 User=postgres Password=admin"
     } else {
         Write-Warn "pgAdmin not installed. Optional: winget install PostgreSQL.pgAdmin"
-        Write-Warn "Or use any SQL client with cards / admin @ localhost:5432"
+        Write-Warn "Or use any SQL client with postgres / admin @ localhost:5432"
     }
 }
 
@@ -583,7 +546,7 @@ function Show-Summary {
     Write-Host "  BFF:       http://localhost:8086"
     Write-Host "  Gateway:   http://localhost:8080"
     Write-Host "  Auth:      http://localhost:8081"
-    Write-Host "  Postgres:  localhost:5432  user=cards  pass=admin"
+    Write-Host "  Postgres:  localhost:5432  user=postgres  pass=admin"
     Write-Host "  pgAdmin:   desktop app — password admin"
     Write-Host "  Kafka:     localhost:9092  (native)"
     Write-Host "  Login UI:  ada.lovelace@cards.local / Password123!"

@@ -5,7 +5,7 @@ cd /d "%~dp0"
 echo.
 echo  Credit Card Platform - ONE CLICK LOCAL (NO DOCKER)
 echo  Finds/downloads Java Maven Node Kafka; uses native Postgres + pgAdmin
-echo  Postgres / pgAdmin password: admin
+echo  Postgres user=postgres  password=admin
 echo.
 
 :: Elevate once so we can reset Postgres password to admin if needed

@@ -7,6 +7,8 @@ $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
 $envBlock = @"
+`$env:DB_USERNAME = 'postgres'
+`$env:DB_PASSWORD = 'admin'
 `$env:OAUTH2_ISSUER = 'http://localhost:8081'
 `$env:KAFKA_BOOTSTRAP_SERVERS = 'localhost:9092'
 `$env:GATEWAY_BASE_URL = 'http://localhost:8080'

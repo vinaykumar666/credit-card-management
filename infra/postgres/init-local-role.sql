@@ -1,16 +1,5 @@
--- Optional for native (no Docker) local setup.
--- Run after init-databases.sql if you want user/password cards/cards:
---   psql -U postgres -f infra/postgres/init-local-role.sql
+-- Ensure local superuser password is admin (native Windows Postgres).
+--   psql -U postgres -d postgres -f infra/postgres/init-local-role.sql
+-- (May require a temporary trust entry in pg_hba.conf if the current password is unknown.)
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cards') THEN
-    CREATE USER cards WITH PASSWORD 'cards';
-  END IF;
-END
-$$;
-
-GRANT ALL PRIVILEGES ON DATABASE auth_db TO cards;
-GRANT ALL PRIVILEGES ON DATABASE account_db TO cards;
-GRANT ALL PRIVILEGES ON DATABASE payment_db TO cards;
-GRANT ALL PRIVILEGES ON DATABASE notification_db TO cards;
+ALTER ROLE postgres WITH LOGIN PASSWORD 'admin';

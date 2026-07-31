@@ -2,8 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${DB_USERNAME:-cards}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-cards}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
@@ -38,8 +38,8 @@ services:
     environment:
       SERVER_PORT: 8081
       DB_URL: jdbc:postgresql://postgres:5432/auth_db
-      DB_USERNAME: ${DB_USERNAME:-cards}
-      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
       OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
       OAUTH2_UI_SECRET: ${OAUTH2_UI_SECRET:-{noop}dashboard-secret}
       OAUTH2_BFF_SECRET: ${OAUTH2_BFF_SECRET:-{noop}bff-secret}
@@ -53,8 +53,8 @@ services:
     environment:
       SERVER_PORT: 8082
       DB_URL: jdbc:postgresql://postgres:5432/account_db
-      DB_USERNAME: ${DB_USERNAME:-cards}
-      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
       OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
     depends_on:
       postgres:
@@ -68,8 +68,8 @@ services:
     environment:
       SERVER_PORT: 8083
       DB_URL: jdbc:postgresql://postgres:5432/payment_db
-      DB_USERNAME: ${DB_USERNAME:-cards}
-      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       ENTERPRISE_API_URL: http://cards-enterprise-api-service:8085
       OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
@@ -87,8 +87,8 @@ services:
     environment:
       SERVER_PORT: 8084
       DB_URL: jdbc:postgresql://postgres:5432/notification_db
-      DB_USERNAME: ${DB_USERNAME:-cards}
-      DB_PASSWORD: ${DB_PASSWORD:-cards}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       OAUTH2_ISSUER: ${OAUTH2_ISSUER:-http://cards-authentication-service:8081}
     depends_on:

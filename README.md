@@ -29,7 +29,7 @@ not just *what* was built.
 |------|-------------------|
 | UI | http://localhost:4200 — `ada.lovelace@cards.local` / `Password123!` |
 | pgAdmin | desktop app — master/DB password **`admin`** |
-| Postgres | `localhost:5432` — user `cards` / password **`admin`** |
+| Postgres | `localhost:5432` — user **`postgres`** / password **`admin`** |
 | Kafka | `localhost:9092` (native download under `.runtime`) |
 
 Stop apps + Kafka: **`stop-all-local.bat`** (leaves Windows Postgres service running).

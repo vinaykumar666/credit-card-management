@@ -11,8 +11,8 @@ Uses **zero containers** (saves disk). Native PostgreSQL service + portable Kafk
 | Piece | URL / credentials |
 |-------|-------------------|
 | Angular UI | http://localhost:4200 — `ada.lovelace@cards.local` / `Password123!` |
-| pgAdmin | desktop app — password **`admin`**; server `localhost:5432` / `cards` / **`admin`** |
-| Postgres | `localhost:5432` — `cards` / **`admin`** |
+| pgAdmin | desktop app — password **`admin`**; server `localhost:5432` / **`postgres`** / **`admin`** |
+| Postgres | `localhost:5432` — **`postgres`** / **`admin`** |
 | Kafka | `localhost:9092` (native) |
 
 Stop apps + Kafka: **`stop-all-local.bat`**.
@@ -80,11 +80,12 @@ npm -v
 
 ### 1.4 PostgreSQL 16 (native Windows)
 1. Install from https://www.postgresql.org/download/windows/
-2. During setup, remember the password for user `postgres` (or create user `cards` / password `cards`).
+2. During setup, set the password for user **`postgres`** to **`admin`** (platform default).
 3. Ensure service is running and port **5432** is free.
 4. Verify:
    ```powershell
-   psql -U postgres -c "SELECT version();"
+   $env:PGPASSWORD='admin'
+   psql -U postgres -h 127.0.0.1 -c "SELECT version();"
    ```
 
 ### 1.5 Kafka (native — no Docker)
@@ -126,16 +127,16 @@ Services default to:
 
 | Service | JDBC URL | User / pass |
 |---------|----------|-------------|
-| Auth | `jdbc:postgresql://localhost:5432/auth_db` | `cards` / `cards` |
-| Account | `jdbc:postgresql://localhost:5432/account_db` | `cards` / `cards` |
-| Payment | `jdbc:postgresql://localhost:5432/payment_db` | `cards` / `cards` |
-| Notification | `jdbc:postgresql://localhost:5432/notification_db` | `cards` / `cards` |
+| Auth | `jdbc:postgresql://localhost:5432/auth_db` | `postgres` / `admin` |
+| Account | `jdbc:postgresql://localhost:5432/account_db` | `postgres` / `admin` |
+| Payment | `jdbc:postgresql://localhost:5432/payment_db` | `postgres` / `admin` |
+| Notification | `jdbc:postgresql://localhost:5432/notification_db` | `postgres` / `admin` |
 
 Override anytime:
 
 ```powershell
 $env:DB_USERNAME="postgres"
-$env:DB_PASSWORD="yourpassword"
+$env:DB_PASSWORD="admin"
 $env:DB_URL="jdbc:postgresql://localhost:5432/auth_db"   # per service
 ```
 
@@ -268,7 +269,7 @@ Transfer / bill pay: [BANKING_FEATURES.md](BANKING_FEATURES.md)
 | `OAUTH2_ISSUER` | `http://localhost:8081` |
 | `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` |
 | `DB_URL` | `jdbc:postgresql://localhost:5432/<db>` |
-| `DB_USERNAME` / `DB_PASSWORD` | `cards` / `cards` (or your Postgres user) |
+| `DB_USERNAME` / `DB_PASSWORD` | `postgres` / `admin` |
 | `GATEWAY_BASE_URL` (BFF) | `http://localhost:8080` |
 | `ENTERPRISE_API_URL` (payment) | `http://localhost:8085` |
 | `AUTH_SERVICE_URL` (gateway) | `http://localhost:8081` |
