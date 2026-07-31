@@ -1,11 +1,11 @@
 <section class="page">
   <header class="page-head">
     <div>
-      <p class="eyebrow">Home</p>
-      <h1>Good to see you</h1>
-      <p class="sub">Here’s a quick look at your cards, recent spending, and messages.</p>
+      <p class="eyebrow">Account overview</p>
+      <h1>Home</h1>
+      <p class="sub">A clear summary of your cards, available credit, and recent activity.</p>
     </div>
-    <a class="cta" routerLink="/payments">Send or pay</a>
+    <a class="cta" routerLink="/payments">Make a payment</a>
   </header>
 
   @if (loading()) {
@@ -20,12 +20,12 @@
   } @else if (data()) {
     <div class="metrics">
       <article class="metric">
-        <p class="label">Your cards</p>
+        <p class="label">Active cards</p>
         <p class="value">{{ data()!.accounts.length }}</p>
-        <p class="hint">Ready to use</p>
+        <p class="hint">Linked to your profile</p>
       </article>
       <article class="metric accent">
-        <p class="label">Available to spend</p>
+        <p class="label">Available credit</p>
         <p class="value">{{ totalAvailable() | currency: (data()!.accounts[0].currency || 'USD') }}</p>
         <p class="hint">Across all cards</p>
       </article>
@@ -39,11 +39,11 @@
     <div class="split">
       <section class="panel">
         <div class="panel-head">
-          <h2>Recent activity</h2>
-          <a routerLink="/accounts">See all cards</a>
+          <h2>Recent transactions</h2>
+          <a routerLink="/accounts">View cards</a>
         </div>
         @if (!data()!.recentTransactions.length) {
-          <p class="muted">No recent purchases yet. Activity will show up here.</p>
+          <p class="muted">No recent transactions yet.</p>
         } @else {
           <ul class="list">
             @for (tx of data()!.recentTransactions; track tx.id) {
@@ -66,12 +66,12 @@
           <a routerLink="/notifications">View all</a>
         </div>
         @if (!data()!.notifications.length) {
-          <p class="muted">You’re all caught up — no new messages.</p>
+          <p class="muted">You’re all caught up.</p>
         } @else {
           <ul class="list">
             @for (n of data()!.notifications.slice(0, 5); track n.id) {
               <li>
-                <div class="avatar soft" aria-hidden="true">⌁</div>
+                <div class="avatar soft" aria-hidden="true">M</div>
                 <div class="meta">
                   <strong>{{ friendlyTemplate(n.template) }}</strong>
                   <span>{{ friendlyStatus(n.status) }}</span>
