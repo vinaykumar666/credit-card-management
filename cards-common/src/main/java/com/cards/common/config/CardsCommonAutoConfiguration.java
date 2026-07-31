@@ -3,11 +3,9 @@ package com.cards.common.config;
 import com.cards.common.error.ErrorCodeProperties;
 import com.cards.common.eventstore.AppEventFootfallFilter;
 import com.cards.common.eventstore.AppEventStore;
-import com.cards.common.eventstore.JdbcAppEventStore;
 import com.cards.common.logging.MethodLifecycleAspect;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -15,13 +13,10 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.jdbc.core.JdbcTemplate;
-
-import javax.sql.DataSource;
 
 /**
- * Spring Boot configuration for the cards-common library.
- * Loads error codes and registers lifecycle logging + optional app_event footfall persistence.
+ * Core cards-common auto-configuration (safe for services without JDBC).
+ * JDBC-backed {@code app_event} persistence lives in {@link CardsCommonJdbcAutoConfiguration}.
  */
 @Configuration
 @EnableConfigurationProperties(ErrorCodeProperties.class)
@@ -34,14 +29,6 @@ public class CardsCommonAutoConfiguration {
             @Value("${spring.application.name:unknown-service}") String serviceName
     ) {
         return new MethodLifecycleAspect(appEventStore, serviceName);
-    }
-
-    @Bean
-    @ConditionalOnClass(JdbcTemplate.class)
-    @ConditionalOnBean(DataSource.class)
-    @ConditionalOnProperty(name = "cards.app-events.enabled", havingValue = "true", matchIfMissing = true)
-    public AppEventStore appEventStore(JdbcTemplate jdbcTemplate) {
-        return new JdbcAppEventStore(jdbcTemplate);
     }
 
     @Bean
