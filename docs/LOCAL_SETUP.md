@@ -1,6 +1,9 @@
 # Local Setup Guide (Spoon-Fed)
 
-Follow these steps **in order** on Windows 10/11. Goal: run the full platform on your laptop.
+**Preferred for daily work: no Docker.**  
+Run PostgreSQL + Kafka on the machine, then start every Spring Boot service and Angular with Maven/npm.
+
+Docker Compose remains an optional “all-in-one” shortcut at the end of this doc.
 
 ---
 
@@ -8,7 +11,7 @@ Follow these steps **in order** on Windows 10/11. Goal: run the full platform on
 
 | Piece | URL / Port |
 |-------|------------|
-| Angular UI | http://localhost:4200 (dev) or http://localhost:8088 (Docker) |
+| Angular UI | http://localhost:4200 |
 | BFF | http://localhost:8086 |
 | API Gateway | http://localhost:8080 |
 | Auth (OAuth2 AS) | http://localhost:8081 |
@@ -19,6 +22,8 @@ Follow these steps **in order** on Windows 10/11. Goal: run the full platform on
 | Postgres | localhost:5432 |
 | Kafka | localhost:9092 |
 
+Defaults in `application.yml` already point at `localhost` — no Docker hostnames required.
+
 Required headers for BFF/gateway (non-auth):
 
 ```http
@@ -28,41 +33,46 @@ X-Correlation-Id: <any-uuid>
 Authorization: Bearer <accessToken>
 ```
 
+Seed login (after auth starts): see [USERS.md](USERS.md)  
+`ada.lovelace@cards.local` / `Password123!`
+
 ---
 
-## 1. Install prerequisites
+## 1. Install prerequisites (no Docker)
 
 ### 1.1 Java 21
-1. Install **Temurin 21** (or Microsoft OpenJDK 21).
-2. Open a **new** PowerShell and run:
-   ```powershell
-   java -version
-   ```
-   You must see `21.x`.
+```powershell
+java -version
+```
+Must show `21.x` (Temurin / Microsoft OpenJDK).
 
 ### 1.2 Maven 3.9+
 ```powershell
 mvn -version
 ```
-If missing: download Apache Maven, unzip, add `bin` to PATH.
 
-### 1.3 Docker Desktop
-1. Install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/).
-2. Start Docker Desktop and wait until it says **Running**.
-3. Verify:
-   ```powershell
-   docker version
-   docker compose version
-   ```
-
-### 1.4 Node.js 20+ (for Angular)
+### 1.3 Node.js 20+
 ```powershell
 node -v
 npm -v
 ```
-Install from https://nodejs.org if missing.
 
-### 1.5 Git
+### 1.4 PostgreSQL 16 (native Windows)
+1. Install from https://www.postgresql.org/download/windows/
+2. During setup, remember the password for user `postgres` (or create user `cards` / password `cards`).
+3. Ensure service is running and port **5432** is free.
+4. Verify:
+   ```powershell
+   psql -U postgres -c "SELECT version();"
+   ```
+
+### 1.5 Kafka (native — no Docker)
+
+Follow **[KAFKA_SETUP.md → Option B: Native / no Docker](KAFKA_SETUP.md#option-b--native--no-docker-windows)**.
+
+You need a broker listening on **`localhost:9092`**.
+
+### 1.6 Git
 ```powershell
 git --version
 ```
@@ -73,73 +83,113 @@ git --version
 
 ```powershell
 cd C:\Users\medip
-git clone <YOUR_REPO_URL> credit-card-management
+git clone https://github.com/vinaykumar666/credit-card-management.git
 cd credit-card-management
-```
-
-If you already have the folder, just:
-```powershell
-cd C:\Users\medip\credit-card-management
 ```
 
 ---
 
-## 3. Build the backend (Maven)
+## 3. Create Postgres databases (one time)
+
+Using `psql` (or pgAdmin → Query Tool):
+
+```powershell
+psql -U postgres -f infra\postgres\init-databases.sql
+psql -U postgres -f infra\postgres\init-local-role.sql
+```
+
+If your superuser is not `postgres`, adjust `-U`.  
+If a database already exists, `CREATE DATABASE` errors are harmless — ignore or drop/recreate.
+
+Services default to:
+
+| Service | JDBC URL | User / pass |
+|---------|----------|-------------|
+| Auth | `jdbc:postgresql://localhost:5432/auth_db` | `cards` / `cards` |
+| Account | `jdbc:postgresql://localhost:5432/account_db` | `cards` / `cards` |
+| Payment | `jdbc:postgresql://localhost:5432/payment_db` | `cards` / `cards` |
+| Notification | `jdbc:postgresql://localhost:5432/notification_db` | `cards` / `cards` |
+
+Override anytime:
+
+```powershell
+$env:DB_USERNAME="postgres"
+$env:DB_PASSWORD="yourpassword"
+$env:DB_URL="jdbc:postgresql://localhost:5432/auth_db"   # per service
+```
+
+---
+
+## 4. Build the backend
 
 ```powershell
 cd C:\Users\medip\credit-card-management
 mvn clean verify
 ```
 
-**Success** looks like `BUILD SUCCESS` at the end.  
-If a test fails, paste the error — do not skip ahead.
+Wait for `BUILD SUCCESS`.
 
 ---
 
-## 4. Start infrastructure + services (easiest path)
+## 5. Start Kafka (must be up before payment / notification)
 
-### Option A — Everything in Docker (recommended first run)
+See [KAFKA_SETUP.md](KAFKA_SETUP.md). Quick check:
+
+```powershell
+# after Kafka is running
+# list topics (path depends on your Kafka install)
+kafka-topics.bat --bootstrap-server localhost:9092 --list
+```
+
+---
+
+## 6. Start all Java services (no Docker)
+
+### Option A — helper script (opens 7 PowerShell windows)
 
 ```powershell
 cd C:\Users\medip\credit-card-management
-docker compose up --build
+.\scripts\run-local-no-docker.ps1
 ```
 
-First build takes a long time (Maven inside each Dockerfile). Leave this terminal open.
+### Option B — manual (one terminal per service)
 
-When healthy, open:
-- UI: http://localhost:8088
-- Gateway health: http://localhost:8080/actuator/health
-- Auth health: http://localhost:8081/actuator/health
-- BFF health: http://localhost:8086/actuator/health
+Set issuer for all resource servers (same machine):
 
-### Option B — Infra in Docker, apps on host (faster iteration)
-
-Terminal 1:
 ```powershell
-docker compose up postgres kafka
+$env:OAUTH2_ISSUER="http://localhost:8081"
+$env:KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 ```
 
-Wait until Postgres is healthy, then create DBs are auto-created via `infra/postgres/init-databases.sql`.
-
-Then run services (separate terminals or IDE):
+**Start Auth first** (issues JWTs / JWKS):
 
 ```powershell
-# Auth first (issuer for JWTs)
+cd C:\Users\medip\credit-card-management
 mvn -pl cards-authentication-service -am spring-boot:run
+```
 
-# Then others
+Then in other terminals:
+
+```powershell
 mvn -pl cards-account-details-service spring-boot:run
+mvn -pl cards-enterprise-api-service spring-boot:run
 mvn -pl cards-payment-service spring-boot:run
 mvn -pl cards-notification-service spring-boot:run
-mvn -pl cards-enterprise-api-service spring-boot:run
 mvn -pl cards-api-gateway-service spring-boot:run
 mvn -pl cards-bff-dashboard-service spring-boot:run
 ```
 
+Health checks:
+
+```powershell
+curl http://localhost:8081/actuator/health
+curl http://localhost:8080/actuator/health
+curl http://localhost:8086/actuator/health
+```
+
 ---
 
-## 5. Start the Angular UI (dev mode)
+## 7. Start Angular (no Docker)
 
 ```powershell
 cd C:\Users\medip\credit-card-management\cards-dashboard-ui
@@ -147,129 +197,103 @@ npm install
 npm start
 ```
 
-Open http://localhost:4200
+Open **http://localhost:4200**  
+Quick-fill **Ada** → password `Password123!`
+
+Env files already use:
+- Auth: `http://localhost:8081`
+- BFF: `http://localhost:8086`
 
 ---
 
-## 6. First login (API walkthrough)
-
-### 6.1 Register a user
-
-```powershell
-curl -X POST http://localhost:8081/api/v1/auth/register `
-  -H "Content-Type: application/json" `
-  -H "X-Correlation-Id: local-demo-1" `
-  -d "{\"email\":\"demo@cards.local\",\"password\":\"Password123!\",\"fullName\":\"Demo User\"}"
-```
-
-Copy `accessToken` from the JSON response.
-
-### 6.2 Call BFF dashboard
-
-```powershell
-$token = "<PASTE_ACCESS_TOKEN>"
-curl http://localhost:8086/bff/v1/dashboard `
-  -H "Authorization: Bearer $token" `
-  -H "X-Channel-Id: WEB" `
-  -H "X-Client-Id: cards-dashboard-ui" `
-  -H "X-Correlation-Id: local-demo-2"
-```
-
-### 6.3 Create an account (via gateway)
-
-```powershell
-curl -X POST http://localhost:8080/api/v1/accounts `
-  -H "Authorization: Bearer $token" `
-  -H "Content-Type: application/json" `
-  -H "X-Channel-Id: WEB" `
-  -H "X-Client-Id: cards-dashboard-ui" `
-  -H "X-Correlation-Id: local-demo-3" `
-  -d "{\"userId\":\"<USER_ID_FROM_LOGIN>\",\"accountNumber\":\"4111111111111111\",\"cardLastFour\":\"1111\",\"cardBrand\":\"VISA\",\"creditLimit\":5000,\"currency\":\"USD\",\"holderName\":\"Demo User\",\"email\":\"demo@cards.local\"}"
-```
-
-Adjust the JSON field names to match `CreateAccountRequest` in the account service if your IDE shows different property names.
-
-### 6.4 OAuth2 discovery
-
-```powershell
-curl http://localhost:8081/.well-known/openid-configuration
-curl http://localhost:8081/oauth2/jwks
-```
-
-Client credentials (BFF/service):
-
-```powershell
-curl -u cards-bff-service:bff-secret -X POST http://localhost:8081/oauth2/token `
-  -H "Content-Type: application/x-www-form-urlencoded" `
-  -d "grant_type=client_credentials&scope=cards.read cards.write"
-```
-
----
-
-## 7. Error codes
-
-All business errors return JSON like:
-
-```json
-{
-  "timestamp": "...",
-  "status": 401,
-  "errorCode": "AUTH_001",
-  "message": "Invalid credentials",
-  "path": "/api/v1/auth/login",
-  "correlationId": "...",
-  "channelId": "WEB",
-  "clientId": "cards-dashboard-ui"
-}
-```
-
-Definitions live in [`cards-common/src/main/resources/error-codes.yml`](../cards-common/src/main/resources/error-codes.yml).  
-**Never hardcode messages in Java** — change the YAML.
-
----
-
-## 8. Common failures
-
-| Symptom | Fix |
-|---------|-----|
-| `Connection refused` Postgres | Start Docker / `docker compose up postgres` |
-| JWT / issuer errors on BFF | Auth must be up first; `OAUTH2_ISSUER=http://localhost:8081` |
-| BFF `BFF_001` / `BFF_002` | Send `X-Channel-Id` and `X-Client-Id` |
-| Gateway `GW_003` | Same tenant headers required |
-| Angular CORS errors | Auth/BFF already allow localhost:4200; restart those services after pull |
-| Port already in use | `netstat -ano \| findstr :8080` then kill the PID |
-| Docker build OOM | In Docker Desktop → Settings → Resources, raise RAM to 8GB+ |
-
----
-
-## 9. Stop everything
-
-```powershell
-docker compose down
-# optional wipe DB:
-docker compose down -v
-```
-
-Stop `npm start` with Ctrl+C.
-
----
-
-## 10. Postman
+## 8. Postman (no Docker)
 
 1. Import `postman/Credit-Card-Platform.postman_collection.json`
-2. Import `postman/Credit-Card-Platform.postman_environment.json`
-3. Select environment **Credit Card Local**
-4. Run **01 Auth → Login (Ada)** then **02 BFF → Dashboard**
+2. Import `postman/Credit-Card-Platform.postman_environment.json` (**Credit Card Local** = localhost URLs)
+3. Run **01 Auth → Login (Ada)** → **02 BFF → Dashboard**
+4. Banking: List Beneficiaries → Transfer Money → Bill Pay  
 
 Details: [../postman/README.md](../postman/README.md)
 
-## 11. Kafka
+---
 
-Step-by-step: [KAFKA_SETUP.md](KAFKA_SETUP.md)
+## 9. First API smoke test
 
-## 12. Next docs
+```powershell
+# Login Ada
+curl -X POST http://localhost:8081/api/v1/auth/login `
+  -H "Content-Type: application/json" `
+  -d "{\"email\":\"ada.lovelace@cards.local\",\"password\":\"Password123!\"}"
+```
 
-- Java 21 rationale: [JAVA21.md](JAVA21.md)
-- CI/CD + EC2 secrets: [CI_CD.md](CI_CD.md)
-- Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+Copy `accessToken`, then:
+
+```powershell
+$token = "<PASTE>"
+curl http://localhost:8086/bff/v1/dashboard `
+  -H "Authorization: Bearer $token" `
+  -H "X-Channel-Id: WEB" `
+  -H "X-Client-Id: cards-dashboard-ui"
+```
+
+Transfer / bill pay: [BANKING_FEATURES.md](BANKING_FEATURES.md)
+
+---
+
+## 10. Environment variables cheat sheet (host run)
+
+| Variable | Typical local value |
+|----------|---------------------|
+| `OAUTH2_ISSUER` | `http://localhost:8081` |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:9092` |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/<db>` |
+| `DB_USERNAME` / `DB_PASSWORD` | `cards` / `cards` (or your Postgres user) |
+| `GATEWAY_BASE_URL` (BFF) | `http://localhost:8080` |
+| `ENTERPRISE_API_URL` (payment) | `http://localhost:8085` |
+| `AUTH_SERVICE_URL` (gateway) | `http://localhost:8081` |
+| …other `*_SERVICE_URL` | `http://localhost:8082` … `8086` |
+
+Gateway and BFF defaults already use `localhost` — usually no overrides needed.
+
+---
+
+## 11. Common failures (no Docker)
+
+| Symptom | Fix |
+|---------|-----|
+| `Connection refused` :5432 | Start PostgreSQL Windows service; check password / DBs created |
+| `Connection refused` :9092 | Start Kafka; see [KAFKA_SETUP.md](KAFKA_SETUP.md) |
+| JWT / issuer errors | Auth must start first; `OAUTH2_ISSUER=http://localhost:8081` |
+| Flyway errors | Drop/recreate empty DB, restart that service |
+| Port in use | `netstat -ano \| findstr :8081` → stop the PID |
+| BFF `BFF_001` / `BFF_002` | Send channel/client headers (UI/Postman do this) |
+| Payment works but no notification | Kafka down or notification service not running |
+
+---
+
+## 12. Stop everything
+
+1. Ctrl+C in each `spring-boot:run` / `npm start` window (or close windows from the script).  
+2. Stop Kafka (Ctrl+C in Kafka terminal).  
+3. Leave PostgreSQL running as a Windows service, or stop it from Services.msc.
+
+---
+
+## 13. Optional — Docker (only if you want it)
+
+Not required. If you prefer one command later:
+
+```powershell
+docker compose up --build
+```
+
+UI then at http://localhost:8088. Mixed mode (Docker only for Postgres/Kafka) is in older notes; prefer **full native** above for interviews/demos without Docker Desktop.
+
+---
+
+## 14. Next docs
+
+- Kafka native steps: [KAFKA_SETUP.md](KAFKA_SETUP.md)
+- Banking transfer/bill pay: [BANKING_FEATURES.md](BANKING_FEATURES.md)
 - Seed users: [USERS.md](USERS.md)
+- Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)

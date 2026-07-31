@@ -21,20 +21,28 @@ not just *what* was built.
 ## 0. Getting Started
 
 ### Prerequisites
-- Java 21, Maven 3.9+, Docker / Docker Compose, Node 20+ (Angular)
-- Optional: kubectl + a Kubernetes cluster for `k8s/` overlays
+- Java 21, Maven 3.9+, Node 20+ (Angular)
+- **Native local (no Docker):** PostgreSQL 16 + Kafka on `localhost` — see [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)
+- Optional: Docker Compose, kubectl
 
 ### Build
 ```bash
 mvn clean verify
 ```
 
-### Run locally (Docker Compose)
+### Run locally (no Docker — recommended)
+1. Create DBs: `psql -U postgres -f infra/postgres/init-databases.sql`
+2. Start Kafka on `localhost:9092` — [docs/KAFKA_SETUP.md](docs/KAFKA_SETUP.md)
+3. Start services: `.\scripts\run-local-no-docker.ps1` (or Maven per service)
+4. UI: `cd cards-dashboard-ui && npm install && npm start` → http://localhost:4200
+
+Full spoon-fed steps: **[docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md)**
+
+### Optional: Docker Compose
 ```bash
 docker compose up --build
 ```
-
-UI: http://localhost:8088 · Gateway: http://localhost:8080 · BFF: http://localhost:8086
+UI: http://localhost:8088
 
 ### Key endpoints
 | Method | Path | Service |
