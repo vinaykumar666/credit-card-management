@@ -153,7 +153,7 @@ public class AuthorizationServerConfig {
      */
     @Bean
     AuthorizationServerSettings authorizationServerSettings(
-            @Value("${spring.security.oauth2.authorizationserver.issuer}") String issuer) {
+            @Value("${OAUTH2_ISSUER:http://localhost:8081}") String issuer) {
         return AuthorizationServerSettings.builder().issuer(issuer).build();
     }
 }

@@ -33,7 +33,7 @@ public class OAuth2TokenIssuer {
      */
     public OAuth2TokenIssuer(JwtEncoder jwtEncoder,
                              OAuth2ClientProperties properties,
-                             @Value("${spring.security.oauth2.authorizationserver.issuer}") String issuer) {
+                             @Value("${OAUTH2_ISSUER:http://localhost:8081}") String issuer) {
         this.jwtEncoder = jwtEncoder;
         this.properties = properties;
         this.issuer = issuer;

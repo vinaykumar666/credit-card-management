@@ -13,9 +13,11 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -26,6 +28,9 @@ import java.util.UUID;
 /**
  * Highest-precedence global filter that sets correlation and tenant headers on every request.
  * Creates a correlation ID when missing; optionally requires channel and client headers except on exempt paths.
+ *
+ * <p>Uses a {@link ServerHttpRequestDecorator} with a fresh {@link HttpHeaders} copy so header mutation
+ * works with Spring Security's read-only / firewall-wrapped request headers (Boot 3.3.5+).</p>
  */
 @Component
 public class CorrelationIdGatewayFilter implements GlobalFilter, Ordered {
@@ -86,16 +91,14 @@ public class CorrelationIdGatewayFilter implements GlobalFilter, Ordered {
         exchange.getAttributes().put(CHANNEL_ID_ATTR, channelId);
         exchange.getAttributes().put(CLIENT_ID_ATTR, clientId);
 
-        ServerHttpRequest.Builder requestBuilder = exchange.getRequest().mutate()
-                .header(CorrelationConstants.CORRELATION_ID_HEADER, finalCorrelationId);
-        if (!channelId.isBlank()) {
-            requestBuilder.header(CorrelationConstants.CHANNEL_ID_HEADER, channelId);
-        }
-        if (!clientId.isBlank()) {
-            requestBuilder.header(CorrelationConstants.CLIENT_ID_HEADER, clientId);
-        }
+        ServerHttpRequest mutatedRequest = withWritableHeaders(
+                exchange.getRequest(),
+                finalCorrelationId,
+                channelId,
+                clientId
+        );
 
-        ServerWebExchange mutatedExchange = exchange.mutate().request(requestBuilder.build()).build();
+        ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
         mutatedExchange.getResponse().getHeaders().set(CorrelationConstants.CORRELATION_ID_HEADER, finalCorrelationId);
         if (!channelId.isBlank()) {
             mutatedExchange.getResponse().getHeaders().set(CorrelationConstants.CHANNEL_ID_HEADER, channelId);
@@ -113,6 +116,35 @@ public class CorrelationIdGatewayFilter implements GlobalFilter, Ordered {
                     MDC.remove(CorrelationConstants.MDC_CHANNEL_ID);
                     MDC.remove(CorrelationConstants.MDC_CLIENT_ID);
                 });
+    }
+
+    /**
+     * Copies request headers into a new writable map and overlays correlation/tenant values.
+     * Avoids {@code request.mutate().header(...)} which throws on Security firewall wrappers.
+     */
+    private static ServerHttpRequest withWritableHeaders(
+            ServerHttpRequest original,
+            String correlationId,
+            String channelId,
+            String clientId
+    ) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.putAll(original.getHeaders());
+        headers.set(CorrelationConstants.CORRELATION_ID_HEADER, correlationId);
+        if (!channelId.isBlank()) {
+            headers.set(CorrelationConstants.CHANNEL_ID_HEADER, channelId);
+        }
+        if (!clientId.isBlank()) {
+            headers.set(CorrelationConstants.CLIENT_ID_HEADER, clientId);
+        }
+        HttpHeaders frozen = HttpHeaders.readOnlyHttpHeaders(headers);
+
+        return new ServerHttpRequestDecorator(original) {
+            @Override
+            public HttpHeaders getHeaders() {
+                return frozen;
+            }
+        };
     }
 
     /**
