@@ -29,8 +29,8 @@ export class PaymentsComponent implements OnInit {
   readonly tabs: { id: PaymentsTab; label: string }[] = [
     { id: 'transfer', label: 'Send money' },
     { id: 'bill', label: 'Pay a bill' },
-    { id: 'card', label: 'Card settle' },
-    { id: 'history', label: 'History' },
+    { id: 'card', label: 'Pay my card' },
+    { id: 'history', label: 'Past payments' },
   ];
 
   readonly activeTab = signal<PaymentsTab>('transfer');
